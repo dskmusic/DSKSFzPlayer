@@ -25,14 +25,14 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            enabled: ${{ inputs.build_windows == true }}
+            enabled: ${{ inputs.build_windows }}
           - os: macos-latest
-            enabled: ${{ inputs.build_macos == true }}
+            enabled: ${{ inputs.build_macos }}
           - os: ubuntu-latest
-            enabled: ${{ inputs.build_linux == true }}
+            enabled: ${{ inputs.build_linux }}
             
     runs-on: ${{ matrix.os }}
-    if: ${{ matrix.enabled }}
+    if: ${{ matrix.enabled == true }}
     
     steps:
     - name: Clonar repositorio
