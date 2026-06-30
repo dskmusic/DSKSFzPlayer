@@ -6,56 +6,63 @@ on:
       build_windows:
         description: 'Compilar para Windows'
         required: true
-        default: 'true'
+        default: true
         type: boolean
       build_macos:
         description: 'Compilar para macOS'
         required: true
-        default: 'true'
+        default: true
         type: boolean
       build_linux:
         description: 'Compilar para Linux'
         required: true
-        default: 'true'
+        default: true
         type: boolean
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            enabled: ${{ inputs.build_windows }}
-          - os: macos-latest
-            enabled: ${{ inputs.build_macos }}
-          - os: ubuntu-latest
-            enabled: ${{ inputs.build_linux }}
-            
-    runs-on: ${{ matrix.os }}
-    if: ${{ matrix.enabled == true }}
-    
+  build-windows:
+    if: ${{ inputs.build_windows }}
+    runs-on: windows-latest
     steps:
-    - name: Clonar repositorio
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - name: Configurar y Compilar
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DSK-SFz-Player-Windows
+          path: build/**/*VST3*
 
-    - name: Instalar dependencias (Linux)
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libasound2-dev libx11-dev libxcursor-dev libxinerama-dev libxext-dev libfreetype6-dev libxrandr-dev libxcomposite-dev libxrender-dev
+  build-macos:
+    if: ${{ inputs.build_macos }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - name: Configurar y Compilar
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DSK-SFz-Player-macOS
+          path: build/**/*VST3*
 
-    - name: Configurar CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
-
-    - name: Compilar
-      run: cmake --build build --config Release
-
-    - name: Subir artefactos
-      uses: actions/upload-artifact@v4
-      with:
-        name: DSK-SFz-Player-${{ matrix.os }}
-        path: |
-          build/**/*VST3*
-          build/**/*Standalone*
+  build-linux:
+    if: ${{ inputs.build_linux }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - name: Instalar dependencias
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev libx11-dev libxcursor-dev libxinerama-dev libxext-dev libfreetype6-dev libxrandr-dev libxcomposite-dev libxrender-dev
+      - name: Configurar y Compilar
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DSK-SFz-Player-Linux
+          path: build/**/*VST3*
