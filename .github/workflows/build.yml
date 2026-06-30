@@ -45,8 +45,8 @@ jobs:
         with:
           name: DSK-SFz-Player-Windows
           path: |
-            ${{ inputs.build_windows && 'build/DSKSFzPlayer_artefacts/Release/VST3/*.vst3' || '' }}
-            ${{ inputs.build_windows_standalone && 'build/DSKSFzPlayer_artefacts/Release/Standalone/*.exe' || '' }}
+            ${{ inputs.build_windows && 'build/DSKSFzPlayer_artefacts/Release/VST3/*' || '' }}
+            ${{ inputs.build_windows_standalone && 'build/DSKSFzPlayer_artefacts/Release/Standalone/*' || '' }}
 
   build-macos:
     if: ${{ inputs.build_macos }}
@@ -62,9 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DSK-SFz-Player-macOS
-          path: |
-            build/DSKSFzPlayer_artefacts/Release/VST3/*.vst3
-            build/DSKSFzPlayer_artefacts/Release/Standalone/*.app
+          path: build/DSKSFzPlayer_artefacts/Release/*/*
 
   build-linux:
     if: ${{ inputs.build_linux }}
@@ -82,9 +80,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DSK-SFz-Player-Linux
-          path: |
-            build/DSKSFzPlayer_artefacts/Release/VST3/*.vst3
-            build/DSKSFzPlayer_artefacts/Release/Standalone/*
+          path: build/DSKSFzPlayer_artefacts/Release/*/*
 
   release:
     needs: [build-windows, build-macos, build-linux]
