@@ -7,6 +7,12 @@
 
 ---
 
+<div align="center">
+  <img src="screenshots/screenshot01.png" alt="DSK SFz Player Interface" width="600"/>
+</div>
+
+---
+
 ## 🚀 Key Features
 
 * **Polyphony:** 64-voice polyphonic engine for rich, layered soundscapes.
