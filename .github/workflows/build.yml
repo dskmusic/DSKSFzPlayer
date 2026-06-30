@@ -45,17 +45,17 @@ jobs:
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
+      - name: Comprimir artefactos
+        shell: powershell
+        run: Compress-Archive -Path build/DSKSFzPlayer_artefacts/Release/* -DestinationPath DSK-SFz-Player-Windows.zip
       - name: Subir artefactos Windows
         uses: actions/upload-artifact@v4
         with:
           name: DSK-SFz-Player-Windows
-          path: |
-            ${{ inputs.build_windows && 'build/DSKSFzPlayer_artefacts/Release/VST3/*' || '' }}
-            ${{ inputs.build_windows_standalone && 'build/DSKSFzPlayer_artefacts/Release/Standalone/*' || '' }}
+          path: DSK-SFz-Player-Windows.zip
 
   build-macos:
     if: ${{ inputs.build_macos }}
-    # Se usa macos-14 para evitar el error de compilación en macOS 15
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -64,11 +64,13 @@ jobs:
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
+      - name: Comprimir artefactos
+        run: zip -r DSK-SFz-Player-macOS.zip build/DSKSFzPlayer_artefacts/Release/*
       - name: Subir artefactos macOS
         uses: actions/upload-artifact@v4
         with:
           name: DSK-SFz-Player-macOS
-          path: build/DSKSFzPlayer_artefacts/Release/*/*
+          path: DSK-SFz-Player-macOS.zip
 
   build-linux:
     if: ${{ inputs.build_linux }}
@@ -82,11 +84,13 @@ jobs:
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
+      - name: Comprimir artefactos
+        run: zip -r DSK-SFz-Player-Linux.zip build/DSKSFzPlayer_artefacts/Release/*
       - name: Subir artefactos Linux
         uses: actions/upload-artifact@v4
         with:
           name: DSK-SFz-Player-Linux
-          path: build/DSKSFzPlayer_artefacts/Release/*/*
+          path: DSK-SFz-Player-Linux.zip
 
   release:
     needs: [build-windows, build-macos, build-linux]
@@ -98,12 +102,12 @@ jobs:
       - name: Descargar todos los artefactos
         uses: actions/download-artifact@v4
         with:
-          path: release-files
+          path: artifacts
           merge-multiple: true
-      - name: Crear Release
+      - name: Publicar Release
         uses: softprops/action-gh-release@v2
         with:
           body: ${{ inputs.release_notes }}
-          files: release-files/*
+          files: artifacts/*.zip
           tag_name: v1.0.${{ github.run_number }}
           generate_release_notes: false
