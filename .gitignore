@@ -1,0 +1,10 @@
+# Archivos y carpetas personalizados
+.backup/
+.claude/
+instruccciones.txt
+
+# Carpetas de compilación
+build/
+out/
+.vs/
+*.user
