@@ -5,13 +5,9 @@
 
 **DSK SFz Player** is a high-performance, 64-voice polyphonic SFZ sampler. Designed for music producers and sound designers, it provides a seamless workflow for loading SFZ instrument libraries with full MIDI control, flexible modulation, and professional-grade effects.
 
----
-
 <div align="center">
   <img src="screenshots/screenshot01.png" alt="DSK SFz Player Interface" width="600"/>
 </div>
-
----
 
 ## 🚀 Key Features
 
