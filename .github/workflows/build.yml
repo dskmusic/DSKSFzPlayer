@@ -28,6 +28,11 @@ on:
         required: true
         default: false
         type: boolean
+      release_notes:
+        description: 'Notas de la versión'
+        required: false
+        default: 'Actualización automática de versión.'
+        type: string
 
 jobs:
   build-windows:
@@ -50,6 +55,7 @@ jobs:
 
   build-macos:
     if: ${{ inputs.build_macos }}
+    # Se usa macos-14 para evitar el error de compilación en macOS 15
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -92,10 +98,12 @@ jobs:
       - name: Descargar todos los artefactos
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: release-files
+          merge-multiple: true
       - name: Crear Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
+          body: ${{ inputs.release_notes }}
+          files: release-files/*
           tag_name: v1.0.${{ github.run_number }}
-          generate_release_notes: true
+          generate_release_notes: false
