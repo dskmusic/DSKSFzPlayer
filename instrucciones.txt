@@ -1,9 +1,0 @@
-
-Remove-Item -Recurse -Force build
-
-cmake -B build
-
-cmake --build build --config Release 2>&1
-
-
-
