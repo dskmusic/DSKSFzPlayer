@@ -55,6 +55,11 @@ For a detailed guide on all features, MIDI mapping, and configuration, please re
 
 ---
 
+## Downloads
+[Click here to download the latest version](https://github.com/dskmusic/DSKSFzPlayer/releases/latest)
+---
+
+
 ## 🔗 Links
 * **Official Website:** [www.dskmusic.com](http://www.dskmusic.com)
 
