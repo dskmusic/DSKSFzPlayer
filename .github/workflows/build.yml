@@ -4,24 +4,34 @@ on:
   workflow_dispatch:
     inputs:
       build_windows:
-        description: 'Compilar para Windows'
+        description: 'Compilar VST3 Windows'
         required: true
-        default: true
+        default: false
+        type: boolean
+      build_windows_standalone:
+        description: 'Compilar Standalone Windows'
+        required: true
+        default: false
         type: boolean
       build_macos:
-        description: 'Compilar para macOS'
+        description: 'Compilar macOS'
         required: true
-        default: true
+        default: false
         type: boolean
       build_linux:
-        description: 'Compilar para Linux'
+        description: 'Compilar Linux'
         required: true
-        default: true
+        default: false
+        type: boolean
+      create_release:
+        description: 'Crear Release automática (Subir archivos)'
+        required: true
+        default: false
         type: boolean
 
 jobs:
   build-windows:
-    if: ${{ inputs.build_windows }}
+    if: ${{ inputs.build_windows || inputs.build_windows_standalone }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,10 +40,13 @@ jobs:
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
-      - uses: actions/upload-artifact@v4
+      - name: Subir artefactos Windows
+        uses: actions/upload-artifact@v4
         with:
           name: DSK-SFz-Player-Windows
-          path: build/**/*VST3*
+          path: |
+            ${{ inputs.build_windows && 'build/DSKSFzPlayer_artefacts/Release/VST3/*.vst3' || '' }}
+            ${{ inputs.build_windows_standalone && 'build/DSKSFzPlayer_artefacts/Release/Standalone/*.exe' || '' }}
 
   build-macos:
     if: ${{ inputs.build_macos }}
@@ -45,10 +58,13 @@ jobs:
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
-      - uses: actions/upload-artifact@v4
+      - name: Subir artefactos macOS
+        uses: actions/upload-artifact@v4
         with:
           name: DSK-SFz-Player-macOS
-          path: build/**/*VST3*
+          path: |
+            build/DSKSFzPlayer_artefacts/Release/VST3/*.vst3
+            build/DSKSFzPlayer_artefacts/Release/Standalone/*.app
 
   build-linux:
     if: ${{ inputs.build_linux }}
@@ -62,7 +78,28 @@ jobs:
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
-      - uses: actions/upload-artifact@v4
+      - name: Subir artefactos Linux
+        uses: actions/upload-artifact@v4
         with:
           name: DSK-SFz-Player-Linux
-          path: build/**/*VST3*
+          path: |
+            build/DSKSFzPlayer_artefacts/Release/VST3/*.vst3
+            build/DSKSFzPlayer_artefacts/Release/Standalone/*
+
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    if: ${{ inputs.create_release }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Descargar todos los artefactos
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Crear Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          tag_name: v1.0.${{ github.run_number }}
+          generate_release_notes: true
