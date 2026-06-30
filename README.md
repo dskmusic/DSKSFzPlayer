@@ -14,7 +14,7 @@
 * **Audio Support:** Compatible with WAV, FLAC, and OGG audio formats inside SFZ files.
 * **Drag & Drop Workflow:** Effortlessly load `.sfz` files, folders, or `.zip` packs directly into the plugin.
 * **Sound Sculpting:**
-*    * Amplitude & Filter envelopes.
+    * Amplitude & Filter envelopes.
     * Two versatile LFOs.
     * Five built-in effects.
 * **Automation:** Real-time parameter automation for dynamic performances.
