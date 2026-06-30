@@ -1,13 +1,38 @@
 name: Compilar DSK SFz Player
 
-on: [push, pull_request]
+on:
+  workflow_dispatch:
+    inputs:
+      build_windows:
+        description: 'Compilar para Windows'
+        required: true
+        default: 'true'
+        type: boolean
+      build_macos:
+        description: 'Compilar para macOS'
+        required: true
+        default: 'true'
+        type: boolean
+      build_linux:
+        description: 'Compilar para Linux'
+        required: true
+        default: 'true'
+        type: boolean
 
 jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            enabled: ${{ inputs.build_windows == true }}
+          - os: macos-latest
+            enabled: ${{ inputs.build_macos == true }}
+          - os: ubuntu-latest
+            enabled: ${{ inputs.build_linux == true }}
+            
     runs-on: ${{ matrix.os }}
+    if: ${{ matrix.enabled }}
     
     steps:
     - name: Clonar repositorio
