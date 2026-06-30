@@ -57,7 +57,6 @@ For a detailed guide on all features, MIDI mapping, and configuration, please re
 
 ## 🔗 Links
 * **Official Website:** [www.dskmusic.com](http://www.dskmusic.com)
-* **Support:** [Insert Link to Issues/Support]
 
 ---
 *Developed by DSK Music.*
