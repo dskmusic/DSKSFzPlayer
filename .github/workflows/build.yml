@@ -1,0 +1,36 @@
+name: Compilar DSK SFz Player
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Clonar repositorio
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Instalar dependencias (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libasound2-dev libx11-dev libxcursor-dev libxinerama-dev libxext-dev libfreetype6-dev libxrandr-dev libxcomposite-dev libxrender-dev
+
+    - name: Configurar CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Compilar
+      run: cmake --build build --config Release
+
+    - name: Subir artefactos
+      uses: actions/upload-artifact@v4
+      with:
+        name: DSK-SFz-Player-${{ matrix.os }}
+        path: |
+          build/**/*VST3*
+          build/**/*Standalone*
