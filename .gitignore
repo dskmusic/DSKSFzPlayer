@@ -1,7 +1,9 @@
 # Archivos y carpetas personalizados
 .backup/
 .claude/
-instruccciones.txt
+.versiones/
+instrucciones.txt
+
 
 # Carpetas de compilación
 build/
