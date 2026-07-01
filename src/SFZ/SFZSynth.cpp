@@ -423,14 +423,14 @@ bool SFZSynth::loadSFZ(const juce::File& sfzFile,
 
 void SFZSynth::unload()
 {
-    allNotesOff();
+    for (auto& v : voices) v.resetInstant(); // APAGADO INSTANTÁNEO, corta la lectura de memoria
     regions.clear();
     sampleCache.clear();
     nativeSRCache.clear();
     rrCounters.clear();
-    loaded         = false;
+    loaded = false;
     instrumentName = {};
-    lastError      = {};
+    lastError = {};
 }
 
 void SFZSynth::prepare(double sr, int bs)

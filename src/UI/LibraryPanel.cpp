@@ -193,19 +193,27 @@ void LibraryTreeItem::populateChildren()
         [](const juce::File& a, const juce::File& b)
         {
             if (a.isDirectory() && !b.isDirectory()) return true;
-            if (!a.isDirectory() && b.isDirectory()) return false;
-            return a.getFileName().compareIgnoreCase(b.getFileName()) < 0;
+    if (!a.isDirectory() && b.isDirectory()) return false;
+    return a.getFileName().compareIgnoreCase(b.getFileName()) < 0;
         });
 
     for (auto& child : children)
     {
         if (child.isDirectory())
         {
-            auto* item = new LibraryTreeItem(Type::SubFolder, child);
-            item->onFileActivated   = onFileActivated;
-            item->onSFZRightClicked = onSFZRightClicked;
-            item->onSFZPreview      = onSFZPreview;
-            addSubItem(item);
+            // Escanear si hay algún archivo jugable dentro de esta carpeta (o sus subcarpetas)
+            juce::Array<juce::File> playableFiles;
+            child.findChildFiles(playableFiles, juce::File::findFiles, true, "*.sfz;*.zip;*.SFZ;*.ZIP");
+
+            // Solo mostramos la carpeta si tiene al menos un SFZ o ZIP dentro
+            if (!playableFiles.isEmpty())
+            {
+                auto* item = new LibraryTreeItem(Type::SubFolder, child);
+                item->onFileActivated = onFileActivated;
+                item->onSFZRightClicked = onSFZRightClicked;
+                item->onSFZPreview = onSFZPreview;
+                addSubItem(item);
+            }
         }
         else
         {
@@ -213,9 +221,9 @@ void LibraryTreeItem::populateChildren()
             if (ext == ".sfz" || ext == ".zip")
             {
                 auto* item = new LibraryTreeItem(ext == ".sfz" ? Type::SFZFile : Type::ZIPFile, child);
-                item->onFileActivated   = onFileActivated;
+                item->onFileActivated = onFileActivated;
                 item->onSFZRightClicked = onSFZRightClicked;
-                item->onSFZPreview      = onSFZPreview;
+                item->onSFZPreview = onSFZPreview;
                 addSubItem(item);
             }
         }
@@ -1065,16 +1073,68 @@ void LibraryPanel::handleFileActivated(const juce::File& file, bool isZip)
             [this, zipPtr](const juce::FileChooser& fc)
             {
                 auto dest = fc.getResult();
-                if (!dest.isDirectory()) return;
-                for (int i = 0; i < zipPtr->getNumEntries(); ++i)
-                    zipPtr->uncompressEntry(i, dest, true);
-                // Replace library with only the extracted folder
-                libraryFolderPaths.clear();
-                libraryFolderPaths.add(dest.getFullPathName());
-                refreshTree();
-                juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,
-                    "ZIP Extracted",
-                    "Instrument extracted to:\n" + dest.getFullPathName());
+        if (!dest.isDirectory()) return;
+
+        // 1. Crear ventana de progreso
+        // Usamos un puntero raw para el progressBar para que viva mientras la ventana esté abierta
+        auto progressWindow = std::make_unique<juce::AlertWindow>("Extracting...",
+            "Please wait...",
+            juce::AlertWindow::NoIcon);
+
+        double progress = 0.0;
+        // CORRECTO: ProgressBar solo acepta la variable de referencia
+        auto progressBar = std::make_unique<juce::ProgressBar>(progress);
+
+        progressWindow->addCustomComponent(progressBar.get());
+        progressWindow->enterModalState(false, nullptr, false);
+
+        bool hasFilesInRoot = false;
+        juce::Array<juce::File> extractedTopLevelFolders;
+        int totalEntries = (int)zipPtr->getNumEntries();
+
+        // 2. Bucle de extracción
+        for (int i = 0; i < totalEntries; ++i)
+        {
+            auto* entry = zipPtr->getEntry(i);
+            if (entry != nullptr)
+            {
+                juce::String path = entry->filename;
+                int firstSlash = path.indexOfChar('/');
+                if (firstSlash < 0) firstSlash = path.indexOfChar('\\');
+
+                if (firstSlash < 0) {
+                    if (!path.endsWith("/") && !path.endsWith("\\")) hasFilesInRoot = true;
+                }
+                else {
+                    juce::String topLevel = path.substring(0, firstSlash);
+                    juce::File f = dest.getChildFile(topLevel);
+                    if (!extractedTopLevelFolders.contains(f)) extractedTopLevelFolders.add(f);
+                }
+            }
+
+            zipPtr->uncompressEntry(i, dest, true);
+
+            // 3. Actualizar progreso
+            progress = (double)(i + 1) / (double)totalEntries;
+            progressBar->repaint();
+
+            // Forzar el procesado de eventos de UI para mover la barra
+            juce::MessageManager::getInstance()->runDispatchLoopUntil(1);
+        }
+
+        progressWindow->exitModalState(0);
+        progressWindow = nullptr; // Cerramos ventana
+
+        // 4. Lógica final
+        if (hasFilesInRoot) {
+            addFolder(dest);
+        }
+        else {
+            for (auto& folder : extractedTopLevelFolders) addFolder(folder);
+            if (extractedTopLevelFolders.isEmpty()) addFolder(dest);
+        }
+
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ZIP Extracted", "Done!");
             });
     }
     else

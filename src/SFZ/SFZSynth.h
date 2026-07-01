@@ -87,6 +87,7 @@ public:
                  double sampleRate, float globalTranspose, float globalTune);
     void noteOff();
     void kill();                           // silencio inmediato con fade corto
+    void resetInstant() { active = false; region = nullptr; } // Apagado forzoso
 
     // Renderiza 'numSamples' sobre los buffers L/R (se SUMA a lo que haya)
     // globalCutoff/Res/FiltType: parámetros de filtro globales del synth

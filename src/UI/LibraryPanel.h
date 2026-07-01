@@ -149,10 +149,20 @@ public:
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
+// Evitamos que el TreeView robe el Drag & Drop
+// ══════════════════════════════════════════════════════════════════════════════
+class LibraryTreeView : public juce::TreeView
+{
+public:
+    LibraryTreeView() {}
+    bool isInterestedInFileDrag(const juce::StringArray&) override { return false; }
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
 // LibraryPanel
 // ══════════════════════════════════════════════════════════════════════════════
 class LibraryPanel : public juce::Component,
-                     public juce::TextEditor::Listener
+    public juce::TextEditor::Listener
 {
 public:
     struct Listener
@@ -202,11 +212,11 @@ private:
     juce::ListenerList<Listener> listeners;
 
     juce::TextEditor searchBox;
-    juce::TextButton clearSearchBtn { "X" };
-    juce::TextButton addFolderBtn   { "+" };
+    juce::TextButton clearSearchBtn{ "X" };
+    juce::TextButton addFolderBtn{ "+" };
     juce::TextButton removeFolderBtn{ "-" };
-    juce::TextButton refreshBtn     { "+/-" };
-    juce::TreeView   treeView;
+    juce::TextButton refreshBtn{ "+/-" };
+    LibraryTreeView  treeView;
 
     std::unique_ptr<LibraryTreeItem> invisibleRoot;
     juce::StringArray                libraryFolderPaths;

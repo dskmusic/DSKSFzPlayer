@@ -30,6 +30,7 @@ public:
     ~DSKSFzEditor() override;
 
     void paint(juce::Graphics& g) override;
+    void paintOverChildren(juce::Graphics& g) override;
     void resized()                   override;
     void timerCallback()              override;
     void lookAndFeelChanged()         override;
@@ -57,6 +58,8 @@ private:
     DSKSFzProcessor& proc;
     DSKLookAndFeel   lf;
 
+    std::atomic<int> loadGeneration{ 0 };
+
     bool isDragOver{ false };
 
     // Dimensiones y estados de arrastre
@@ -78,6 +81,19 @@ private:
     juce::HyperlinkButton siteLink;
     juce::Label           instrNameLabel;
     juce::Label           statusLabel;
+
+    // Variante del TextButton para poder capturar el evento real del ratón
+    class FavButton : public juce::TextButton {
+    public:
+        FavButton() : juce::TextButton("+") {}
+        std::function<void(const juce::MouseEvent&)> onFavClick;
+        void mouseUp(const juce::MouseEvent& e) override {
+            juce::TextButton::mouseUp(e);
+            if (isEnabled() && contains(e.getPosition()) && onFavClick) onFavClick(e);
+        }
+    };
+    FavButton             addFavBtn;
+
     juce::TextButton      openBtn{ "Open SFZ / ZIP" };
     juce::TextButton      optionsBtn{ "Options" };
 

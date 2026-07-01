@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <mutex>
 #include "SFZ/SFZSynth.h"
 #include "Effects/EffectsChain.h"
 
@@ -48,6 +49,7 @@ public:
     std::atomic<bool> isLoadingInstrument { false };
 
 private:
+    std::mutex   loadMutex;
     SFZSynth     synth;
     EffectsChain fx;
     juce::File   currentSFZFile;

@@ -52,11 +52,11 @@ private:
 
 // ── Layout constants ──────────────────────────────────────────────────────────
 static constexpr int LIB_W = 220;
-static constexpr int HDR_H = 56;
+static constexpr int HDR_H = 48;
 static constexpr int KSZ = 42;
 static constexpr int KSLOT = 52;
 static constexpr int KNOB_Y = 18;
-static constexpr int ROW_H = KNOB_Y + KSZ + 16 + 4;
+static constexpr int ROW_H = KNOB_Y + KSZ + 16 + 10;
 static constexpr int FTR_H = 30;
 static constexpr int KB_H = 56;
 static constexpr int VDIV_H = 6; // Altura del tirador horizontal
@@ -156,7 +156,28 @@ DSKSFzEditor::DSKSFzEditor(DSKSFzProcessor& p)
     };
 
     setSize(libWidth + 780, pluginHeight);
-    setResizable(false, false);  // must come AFTER setSize to lock correct dimensions
+
+    // Habilitar redimensión/maximizado SOLO en Standalone
+    if (proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone)
+    {
+        setResizable(true, true);
+
+        // Pedimos al hilo principal que espere a que el editor se acople a la ventana...
+        juce::MessageManager::callAsync([this]()
+            {
+                // ...buscamos la ventana principal contenedora (DocumentWindow)
+                if (auto* dw = findParentComponentOfClass<juce::DocumentWindow>())
+                {
+                    // ...y le forzamos a mostrar todos los botones (Minimizar, Maximizar y Cerrar)
+                    dw->setTitleBarButtonsRequired(juce::DocumentWindow::allButtons, false);
+                }
+            });
+    }
+    else
+    {
+        setResizable(false, false);
+    }
+
     applyWindowConstraints();
 
     startTimerHz(12);
@@ -191,6 +212,8 @@ void DSKSFzEditor::lookAndFeelChanged()
     openBtn.setColour(juce::TextButton::textColourOffId, t.accent);
     optionsBtn.setColour(juce::TextButton::buttonColourId, t.sectionBg);
     optionsBtn.setColour(juce::TextButton::textColourOffId, t.subtext);
+    addFavBtn.setColour(juce::TextButton::buttonColourId, t.sectionBg);
+    addFavBtn.setColour(juce::TextButton::textColourOffId, t.favGold);
     rrResetBtn.setColour(juce::TextButton::buttonColourId, t.sectionBg);
     rrResetBtn.setColour(juce::TextButton::textColourOffId, t.subtext);
     voicesKnob.setColour(juce::Slider::textBoxTextColourId, t.text);
@@ -293,7 +316,7 @@ void DSKSFzEditor::buildUI()
     siteLink.setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(siteLink);
 
-    instrNameLabel.setFont(juce::Font(13.0f, juce::Font::bold));
+    instrNameLabel.setFont(juce::Font(16.0f, juce::Font::bold)); // Aumentamos la fuente de 13 a 16
     instrNameLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF00E6CC));
     instrNameLabel.setJustificationType(juce::Justification::centred);
     instrNameLabel.setText("No instrument loaded", juce::dontSendNotification);
@@ -304,6 +327,22 @@ void DSKSFzEditor::buildUI()
     statusLabel.setJustificationType(juce::Justification::centred);
     statusLabel.setText("Ready", juce::dontSendNotification);
     addAndMakeVisible(statusLabel);
+
+    addFavBtn.setTooltip("Add current instrument to Favorites / Añadir a favoritos");
+    addFavBtn.onFavClick = [this](const juce::MouseEvent& e)
+    {
+        auto f = proc.getCurrentSFZFile();
+        if (f.existsAsFile())
+        {
+            libraryPanel.showAddToFavoritesMenu(f, e); // Ahora sí le pasamos el evento real
+        }
+        else
+        {
+            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+                "Favorites", "No instrument loaded to add to favorites.");
+        }
+    };
+    addAndMakeVisible(addFavBtn);
 
     openBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF0F3460));
     openBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xFF00D4FF));
@@ -671,27 +710,15 @@ void DSKSFzEditor::paint(juce::Graphics& g)
     const int W = getWidth();
     const int H = getHeight();
     const int rx = libWidth;
-    const int rw = W - libWidth;
+    const int rw = 780; // Fijo visualmente a 780px para no desparramar controles
 
-    // Header bar
+    // Header bar (Extendemos el fondo hasta W para ocultar el hueco)
     g.setColour(t.headerBg);
-    g.fillRect(rx, 0, rw, HDR_H);
+    g.fillRect(rx, 0, W - rx, HDR_H);
     g.setColour(t.divider);
-    g.drawLine((float)rx, (float)HDR_H, (float)(rx + rw), (float)HDR_H, 1.5f);
+    g.drawLine((float)rx, (float)HDR_H, (float)W, (float)HDR_H, 1.5f);
 
-    // Library divider (drawn slightly wider so user can grab it)
-    g.setColour(t.accent.withAlpha(0.25f));
-    g.fillRect(libWidth, 0, 2, H - KB_H - VDIV_H);
-    g.setColour(t.divider);
-    g.drawLine((float)libWidth, 0.0f, (float)libWidth, (float)(H - KB_H - VDIV_H), 1.0f);
-
-    // Horizontal divider (Separador de teclado / redimensionador vertical)
-    const int divY = H - KB_H - VDIV_H;
-    g.setColour(t.accent.withAlpha(0.12f));
-    g.fillRect(0, divY, W, VDIV_H);
-    g.setColour(t.divider);
-    g.drawLine(0.0f, (float)divY, (float)W, (float)divY, 1.0f);
-    g.drawLine(0.0f, (float)(divY + VDIV_H), (float)W, (float)(divY + VDIV_H), 1.0f);
+    
 
     const int S0 = HDR_H;
     const int S1 = S0 + ROW_H;
@@ -715,12 +742,26 @@ void DSKSFzEditor::paint(juce::Graphics& g)
 
     secBg(g, secR(S2), "FX");
 
-    // Footer strip
+    // Footer strip (Extendemos el fondo hasta W)
     g.setColour(t.footerBg);
-    g.fillRect(rx, SF, rw, FTR_H);
+    g.fillRect(rx, SF, W - rx, FTR_H);
     g.setColour(t.text.withAlpha(0.75f));
     g.setFont(juce::Font(11.0f, juce::Font::bold));
     g.drawText("Voices:", rx + 10, SF + 7, 56, 16, juce::Justification::centredLeft);
+
+    // Library divider (drawn slightly wider so user can grab it)
+    g.setColour(t.accent.withAlpha(0.25f));
+    g.fillRect(libWidth, 0, 2, H - KB_H - VDIV_H);
+    g.setColour(t.divider);
+    g.drawLine((float)libWidth, 0.0f, (float)libWidth, (float)(H - KB_H - VDIV_H), 1.0f);
+
+    // Horizontal divider (Separador de teclado / redimensionador vertical)
+    const int divY = H - KB_H - VDIV_H;
+    g.setColour(t.accent.withAlpha(0.12f));
+    g.fillRect(0, divY, W, VDIV_H);
+    g.setColour(t.divider);
+    g.drawLine(0.0f, (float)divY, (float)W, (float)divY, 1.0f);
+    g.drawLine(0.0f, (float)(divY + VDIV_H), (float)W, (float)(divY + VDIV_H), 1.0f);
 
     // Meters
     const int mW = 10, mGap = 4;
@@ -729,14 +770,29 @@ void DSKSFzEditor::paint(juce::Graphics& g)
     const int mH = KSZ + 16;
     drawMeter(g, mX, mY, mW, mH, meterL.load(), "L");
     drawMeter(g, mX + mW + mGap, mY, mW, mH, meterR.load(), "R");
+}
 
-    // Drag-over overlay
+// ── overlay visual sobre TODOS los componentes ────────────────────────────────
+void DSKSFzEditor::paintOverChildren(juce::Graphics& g)
+{
     if (isDragOver)
     {
-        g.setColour(t.accent.withAlpha(0.12f));
+        const auto& t = lf.getTheme();
+
+        // Oscurecemos toda la interfaz, incluyendo la librería y el teclado
+        g.setColour(t.accent.withAlpha(0.20f));
         g.fillAll();
+
+        // Borde exterior
         g.setColour(t.accent);
         g.drawRect(getLocalBounds(), 3);
+
+        // Fondo semi-transparente para asegurar que el texto se lea perfecto
+        auto textBounds = getLocalBounds().withSizeKeepingCentre(360, 40);
+        g.setColour(juce::Colour(0xD9000000));
+        g.fillRoundedRectangle(textBounds.toFloat(), 6.0f);
+
+        g.setColour(t.accent);
         g.setFont(juce::Font(18.0f, juce::Font::bold));
         g.drawText("Drop SFZ file, folder, or ZIP pack",
             getLocalBounds(), juce::Justification::centred);
@@ -746,10 +802,18 @@ void DSKSFzEditor::paint(juce::Graphics& g)
 // ── resized ───────────────────────────────────────────────────────────────────
 void DSKSFzEditor::resized()
 {
+    // Si la ventana fue redimensionada por el OS (ej. al maximizar en Standalone)
+    // calculamos libWidth para que la parte derecha NUNCA pase de 780px
+    if (getWidth() != libWidth + 780 || getHeight() != pluginHeight)
+    {
+        libWidth = juce::jmax(120, getWidth() - 780);
+        pluginHeight = juce::jmax(DEF_H, getHeight());
+    }
+
     const int W = getWidth();
     const int H = getHeight();
     const int rx = libWidth;
-    const int rw = W - libWidth;
+    const int rw = 780; // Fijo a 780px para que los knobs se queden agrupados
 
     // Los controles de la derecha conservan su posición Y anclada respecto a la parte superior
     const int S0 = HDR_H;
@@ -766,10 +830,11 @@ void DSKSFzEditor::resized()
     titleLink.setBounds(hdrLabelX, 4, 160, 24);
     siteLink.setBounds(hdrLabelX, 28, 120, 16);
     const int lcdX = hdrLabelX + 170;
-    const int lcdW = rw - 420;
-    instrNameLabel.setBounds(lcdX, 10, lcdW, 18);
-    statusLabel.setBounds(lcdX, 28, lcdW, 16);
-    openBtn.setBounds(rx + rw - 210, 10, 116, 28);
+    const int lcdW = 380;
+    instrNameLabel.setBounds(lcdX, 6, lcdW - 24, 24);
+    statusLabel.setBounds(lcdX, 30, lcdW - 24, 16);
+    addFavBtn.setBounds(lcdX + lcdW - 20, 16, 18, 18); // Botón bajado a Y=15 para centrado vertical perfecto
+    openBtn.setBounds(rx + 780 - 210, 10, 116, 28);
     optionsBtn.setBounds(rx + rw - 90, 10, 82, 28);
 
     auto K = [&](juce::Slider& s, int col, int secY)
@@ -892,11 +957,14 @@ bool DSKSFzEditor::keyStateChanged(bool isKeyDown)
 void DSKSFzEditor::libraryFileRequested(const juce::File& sfzFile)
 {
     statusLabel.setText("Loading...", juce::dontSendNotification);
-    juce::Thread::launch([this, sfzFile]()
+    const int currentGen = ++loadGeneration;
+    juce::Thread::launch([this, sfzFile, currentGen]()
         {
-            proc.loadSFZ(sfzFile);
-    juce::MessageManager::callAsync([this]()
+            if (currentGen != loadGeneration.load()) return; // Abortar carga si hay un clic más reciente
+    proc.loadSFZ(sfzFile);
+    juce::MessageManager::callAsync([this, currentGen]()
         {
+            if (currentGen == loadGeneration.load())
             statusLabel.setText("Ready", juce::dontSendNotification);
         });
         });
@@ -1002,7 +1070,17 @@ void DSKSFzEditor::mouseDown(const juce::MouseEvent& e)
     }
 
     if (auto* c = getConstrainer())
-        c->setSizeLimits(120 + 780, DEF_H, 450 + 780, 1200);
+    {
+        if (proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone)
+        {
+            // Permite a la ventana crecer libremente para que nuestro paint() tape el fondo
+            c->setSizeLimits(120 + 780, DEF_H, 4000, 4000);
+        }
+        else
+        {
+            c->setSizeLimits(120 + 780, DEF_H, 450 + 780, 1200);
+        }
+    }
 }
 
 void DSKSFzEditor::mouseDrag(const juce::MouseEvent& e)
@@ -1013,7 +1091,18 @@ void DSKSFzEditor::mouseDrag(const juce::MouseEvent& e)
         libWidth = juce::jlimit(120, 450, libWidthAtDragStart + (e.x - dragStartX));
 
     if (isDraggingHDivider)
-        pluginHeight = juce::jlimit(DEF_H, 1200, pluginHeightAtDragStart + (e.y - dragStartY));
+        pluginHeight = juce::jlimit(DEF_H, 4000, pluginHeightAtDragStart + (e.y - dragStartY));
+
+    // Si es Standalone, actualizamos el limitador al vuelo con tu nuevo ancho manual
+    // justo antes de aplicar el cambio de tamaño, evitando que se quede trabado
+    if (auto* c = getConstrainer())
+    {
+        if (proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone)
+        {
+            int nextW = libWidth + 780;
+            c->setSizeLimits(nextW, DEF_H, nextW, 4000);
+        }
+    }
 
     setSize(libWidth + 780, pluginHeight);
 }
@@ -1030,7 +1119,12 @@ void DSKSFzEditor::mouseUp(const juce::MouseEvent&)
 void DSKSFzEditor::applyWindowConstraints()
 {
     if (auto* c = getConstrainer())
-        c->setSizeLimits(getWidth(), getHeight(), getWidth(), getHeight());
+    {
+        if (proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone)
+            c->setSizeLimits(120 + 780, DEF_H, 4000, 4000);
+        else
+            c->setSizeLimits(getWidth(), getHeight(), getWidth(), getHeight());
+    }
 }
 
 // ── SFZ preview (click [S] badge) ────────────────────────────────────────────
@@ -1043,13 +1137,18 @@ void DSKSFzEditor::triggerPreviewNote()
 void DSKSFzEditor::loadSFZForPreview(const juce::File& f)
 {
     statusLabel.setText("Loading...", juce::dontSendNotification);
-    juce::Thread::launch([this, f]()
+    const int currentGen = ++loadGeneration;
+    juce::Thread::launch([this, f, currentGen]()
         {
-            proc.loadSFZ(f);
-    juce::MessageManager::callAsync([this]()
+            if (currentGen != loadGeneration.load()) return; // Abortar carga si hay un clic más reciente
+    proc.loadSFZ(f);
+    juce::MessageManager::callAsync([this, currentGen]()
         {
-            statusLabel.setText("Ready", juce::dontSendNotification);
-    triggerPreviewNote();
+            if (currentGen == loadGeneration.load())
+            {
+                statusLabel.setText("Ready", juce::dontSendNotification);
+                triggerPreviewNote();
+            }
         });
         });
 }

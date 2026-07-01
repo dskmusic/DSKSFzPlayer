@@ -209,6 +209,8 @@ void DSKSFzProcessor::syncParametersToEngine()
 
 bool DSKSFzProcessor::loadSFZ(const juce::File& file)
 {
+    std::lock_guard<std::mutex> lock(loadMutex);
+
     // Signal audio thread to output silence during loading
     isLoadingInstrument.store(true, std::memory_order_release);
 
