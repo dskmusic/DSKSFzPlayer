@@ -70,4 +70,4 @@ For a detailed guide on all features, MIDI mapping, and configuration, please re
 
 ---
 *Developed by DSK Music.*
-*Made with ❤️ in Gran Canaria, Spain.*
+* *Made with ❤️ in Gran Canaria, Spain.*
