@@ -39,4 +39,4 @@ git show --stat HEAD
 :fin
 echo.
 set /p "OPENACT=Abrir GitHub Actions para compilar? (s/N): "
-if /i "%OPENACT%"=="S" start "" "https://github.com/dskmusic/DSKSFzPlayer/actions"
+if /i "%OPENACT%"=="S" start "" "https://github.com/dskmusic/DSKSFzPlayer/actions/workflows/build.yml"
