@@ -47,7 +47,7 @@ jobs:
           cmake --build build --config Release
       - name: Comprimir artefactos
         shell: powershell
-        run: Compress-Archive -Path build/DSKSFzPlayer_artefacts/Release/standalone, build/DSKSFzPlayer_artefacts/Release/vst3 -DestinationPath DSK_SFz_player_windows.zip
+        run: Compress-Archive -Path build/DSKSFzPlayer_artefacts/Release/* -DestinationPath DSK_SFz_player_windows.zip
       - name: Subir artefactos Windows
         uses: actions/upload-artifact@v4
         with:
@@ -65,7 +65,8 @@ jobs:
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
       - name: Comprimir artefactos
-        run: cd build/DSKSFzPlayer_artefacts/Release && zip -r ../../../DSK_SFz_player_macos.zip standalone vst3
+        # Cambiado a '.' para comprimir el contenido de la carpeta actual
+        run: cd build/DSKSFzPlayer_artefacts/Release && zip -r ../../../DSK_SFz_player_macos.zip .
       - name: Subir artefactos macOS
         uses: actions/upload-artifact@v4
         with:
@@ -85,7 +86,8 @@ jobs:
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
       - name: Comprimir artefactos
-        run: cd build/DSKSFzPlayer_artefacts/Release && zip -r ../../../DSK_SFz_player_linux.zip standalone vst3
+        # Cambiado a '.' para comprimir el contenido de la carpeta actual
+        run: cd build/DSKSFzPlayer_artefacts/Release && zip -r ../../../DSK_SFz_player_linux.zip .
       - name: Subir artefactos Linux
         uses: actions/upload-artifact@v4
         with:
