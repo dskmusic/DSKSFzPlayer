@@ -912,7 +912,7 @@ void LibraryPanel::rebuildFavoritesSection()
 }
 
 void LibraryPanel::showAddToFavoritesMenu(const juce::File& sfzFile,
-                                           const juce::MouseEvent& e)
+                                           const juce::MouseEvent& /*e*/)
 {
     const juce::String instrName = sfzFile.getFileNameWithoutExtension();
 

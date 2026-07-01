@@ -1,59 +1,55 @@
-# DSK SFz Player
+# DSK SFz player - Installation Notes & Troubleshooting
 
-![Version 1.0](https://img.shields.io/badge/version-1.0-blue)
-![Platform](https://img.shields.io/badge/platform-VST3%20%7C%20Standalone-green)
+## 🇬🇧 English
 
-**DSK SFz Player** is a high-performance, 64-voice polyphonic SFZ sampler[cite: 3]. Designed for music producers and sound designers, it provides a seamless workflow for loading SFZ instrument libraries with full MIDI control, flexible modulation, and professional-grade effects[cite: 3].
+### Installation
 
-## 📥 Downloads
-[Click here to download the latest version](https://github.com/dskmusic/DSKSFzPlayer/releases/latest)
+**Windows:**
+* **VST3 Plugin:** Copy `DSK SFz player.vst3` to `C:\Program Files\Common Files\VST3\`[cite: 6].
+* **Standalone:** Copy `DSK SFz player.exe` to any folder; no installation required[cite: 6].
 
----
+**macOS:**
+* **VST3 Plugin:** Copy `DSK SFz player.vst3` to `/Library/Audio/Plug-Ins/VST3/`[cite: 6].
+* **Standalone:** Move the application to your `/Applications` folder[cite: 6].
 
-## 🛠 Installation
+**Linux:**
+* **VST3 Plugin:** Copy `DSK SFz player.vst3` to `~/.vst3/`[cite: 6].
+* **Standalone:** Ensure the binary has execute permissions (`chmod +x "DSK SFz player"`) and run directly[cite: 6].
 
-### Windows
-*   **VST3 Plugin:** Copy `DSK SFz player.vst3` to `C:\Program Files\Common Files\VST3\`.
-*   **Standalone:** Copy `DSK SFz player.exe` to any folder; no installation required[cite: 4].
-*   **Settings:** Stored in `%APPDATA%\DSK Music\DSK SFz player\`[cite: 4].
+### ⚠️ Important Note: Antivirus & Security Warnings
+When you extract or run the plugin for the first time, your antivirus or OS security (like Windows SmartScreen or macOS Gatekeeper) might flag the file as "suspicious" or block it from running. 
 
-### macOS
-*   **VST3 Plugin:** Copy `DSK SFz player.vst3` to `/Library/Audio/Plug-Ins/VST3/`.
-*   **Standalone:** Move the application to your `/Applications` folder.
-*   **Settings:** Preferences are stored in `~/Library/Application Support/DSK Music/DSK SFz player/`.
+**This is a common false positive.** Because this is a new indie release, the executable does not yet have a widespread "reputation" in antivirus databases, nor does it carry a costly corporate digital signature. 
 
-### Linux
-*   **VST3 Plugin:** Copy `DSK SFz player.vst3` to `~/.vst3/`.
-*   **Standalone:** Ensure the binary has execute permissions (`chmod +x "DSK SFz player"`) and run directly.
-*   **Settings:** Preferences are stored in `~/.config/DSK Music/DSK SFz player/`.
-
----
-
-## 🚀 Key Features
-
-* **Polyphony:** 64-voice engine for rich, layered sound[cite: 3].
-* **Audio Support:** Compatible with WAV, FLAC, and OGG formats within SFZ files[cite: 3].
-* **Workflow:** Drag & drop support for `.sfz` files, folders, or `.zip` packs[cite: 3].
-* **Sound Sculpting:** 
-    * Amplitude & Filter ADSR envelopes[cite: 3].
-    * Two independent LFOs (Sine, Tri, Saw, Sq, S&H)[cite: 3].
-    * Five FX slots (Drive, Chorus, Delay, Reverb, EQ)[cite: 3].
-* **Interface:** Fully resizeable window with six customizable color themes[cite: 3].
+The plugin is 100% safe and free of malware. 
+* **If Windows Defender blocks it:** Click on **"More info"** and then **"Run anyway"**.
+* **If macOS blocks it:** Go to **System Settings > Privacy & Security** and click **"Open Anyway"** for the plugin.
+* **If AVG/Avast or another antivirus blocks it:** Please add the plugin file or your VST3 folder to your antivirus exceptions list.
 
 ---
 
-## 🎹 Quick Start
+## 🇪🇸 Español
 
-1. **Adding Instruments:** Click **+** in the Library panel to add a directory, or drag instruments directly onto the window[cite: 3].
-2. **Favorites:** Right-click any `.sfz` file in the tree to add it to your **★ FAVORITES** for quick access[cite: 3].
-3. **MIDI:** Click the plugin window to focus it; use your PC keyboard as a standard piano layout (A=C4, W=C#4, etc.)[cite: 3].
-4. **Configuration:** Use the **Options** menu to export/import your library paths and settings as `.json` files[cite: 3].
+### Instalación
 
----
+**Windows:**
+* **Plugin VST3:** Copia `DSK SFz player.vst3` en `C:\Program Files\Common Files\VST3\`[cite: 6].
+* **Standalone:** Copia `DSK SFz player.exe` a cualquier carpeta; no requiere instalación[cite: 6].
 
-## 🔗 Links
-* **Official Website:** [www.dskmusic.com](http://www.dskmusic.com)
-* **Documentation:** Refer to `manual.md` for a detailed guide on parameters and MIDI mapping[cite: 3].
+**macOS:**
+* **Plugin VST3:** Copia `DSK SFz player.vst3` en `/Library/Audio/Plug-Ins/VST3/`[cite: 6].
+* **Standalone:** Mueve la aplicación a tu carpeta `/Applications`[cite: 6].
 
----
-*Developed by DSK Music.*
+**Linux:**
+* **Plugin VST3:** Copia `DSK SFz player.vst3` en `~/.vst3/`[cite: 6].
+* **Standalone:** Asegúrate de que el binario tenga permisos de ejecución (`chmod +x "DSK SFz player"`) y ejecútalo directamente[cite: 6].
+
+### ⚠️ Nota Importante: Avisos de Seguridad y Antivirus
+Al extraer o ejecutar el plugin por primera vez, es posible que tu antivirus o el sistema de seguridad de tu SO (como Windows SmartScreen o macOS Gatekeeper) marque el archivo como "sospechoso" o bloquee su ejecución.
+
+**Esto es un falso positivo muy común.** Al tratarse de un lanzamiento indie nuevo, el archivo ejecutable aún no tiene un largo historial de "reputación" en las bases de datos de los antivirus, ni cuenta con una costosa firma digital corporativa.
+
+El plugin es 100% seguro y libre de software malicioso.
+* **Si Windows Defender lo bloquea:** Haz clic en **"Más información"** y luego en **"Ejecutar de todas formas"**.
+* **Si macOS lo bloquea:** Ve a **Ajustes del Sistema > Privacidad y Seguridad** y haz clic en **"Abrir de todos modos"** para permitir el plugin.
+* **Si AVG/Avast u otro antivirus lo bloquea:** Por favor, añade el archivo del plugin o tu carpeta VST3 a la lista de excepciones (o exclusiones) de tu antivirus.

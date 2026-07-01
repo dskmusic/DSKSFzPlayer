@@ -12,8 +12,8 @@ public:
         text.setScrollbarsShown(true);
         text.setFont(juce::Font(juce::Font::getDefaultMonospacedFontName(), 12.5f, 0));
         text.setColour(juce::TextEditor::backgroundColourId, juce::Colour(0xFF0D1828));
-        text.setColour(juce::TextEditor::textColourId,       juce::Colour(0xFFCCDDEE));
-        text.setColour(juce::TextEditor::outlineColourId,    juce::Colour(0xFF334466));
+        text.setColour(juce::TextEditor::textColourId, juce::Colour(0xFFCCDDEE));
+        text.setColour(juce::TextEditor::outlineColourId, juce::Colour(0xFF334466));
         text.setColour(juce::TextEditor::focusedOutlineColourId, juce::Colour(0xFF334466));
 
         // Load from embedded binary resource
@@ -24,7 +24,7 @@ public:
         text.moveCaretToTop(false);
 
         closeBtn.setButtonText("Close");
-        closeBtn.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF0F3460));
+        closeBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF0F3460));
         closeBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xFF00D4FF));
         closeBtn.onClick = [this]()
         {
@@ -51,14 +51,16 @@ private:
 };
 
 // ── Layout constants ──────────────────────────────────────────────────────────
-static constexpr int LIB_W  = 220;
-static constexpr int HDR_H  = 56;
-static constexpr int KSZ    = 42;
-static constexpr int KSLOT  = 52;
+static constexpr int LIB_W = 220;
+static constexpr int HDR_H = 56;
+static constexpr int KSZ = 42;
+static constexpr int KSLOT = 52;
 static constexpr int KNOB_Y = 18;
-static constexpr int ROW_H  = KNOB_Y + KSZ + 16 + 4;
-static constexpr int FTR_H  = 30;
-static constexpr int KB_H   = 56;
+static constexpr int ROW_H = KNOB_Y + KSZ + 16 + 4;
+static constexpr int FTR_H = 30;
+static constexpr int KB_H = 56;
+static constexpr int VDIV_H = 6; // Altura del tirador horizontal
+static constexpr int DEF_H = HDR_H + 3 * ROW_H + FTR_H + VDIV_H + KB_H;
 
 static int colX(int rx, int col) { return rx + 8 + col * KSLOT; }
 
@@ -69,8 +71,8 @@ void ADSRDisplay::paint(juce::Graphics& g)
 {
     auto* dskLF = dynamic_cast<const DSKLookAndFeel*>(&getLookAndFeel());
     const juce::Colour accent = dskLF ? dskLF->getTheme().accent : juce::Colour(0xFF00D4FF);
-    const juce::Colour bgCol  = dskLF ? dskLF->getTheme().lcdBg  : juce::Colour(0xFF0D1828);
-    const juce::Colour bdCol  = dskLF ? dskLF->getTheme().border  : juce::Colour(0xFF334466);
+    const juce::Colour bgCol = dskLF ? dskLF->getTheme().lcdBg : juce::Colour(0xFF0D1828);
+    const juce::Colour bdCol = dskLF ? dskLF->getTheme().border : juce::Colour(0xFF334466);
 
     auto b = getLocalBounds().toFloat().reduced(2.0f);
     g.setColour(bgCol);
@@ -81,7 +83,7 @@ void ADSRDisplay::paint(juce::Graphics& g)
     float total = attack + decay + 0.25f + release;
     if (total < 0.001f) return;
 
-    float xA = attack  / total;
+    float xA = attack / total;
     float xD = xA + decay / total;
     float xS = xD + 0.25f / total;
     float yS = juce::jlimit(0.0f, 1.0f, sustain / 100.0f);
@@ -116,16 +118,23 @@ void ADSRDisplay::paint(juce::Graphics& g)
 // ══════════════════════════════════════════════════════════════════════════════
 DSKSFzEditor::DSKSFzEditor(DSKSFzProcessor& p)
     : AudioProcessorEditor(p),
-      proc(p),
-      titleLink("DSK SFz player", juce::URL("https://www.dskmusic.com")),
-      siteLink("www.dskmusic.com",  juce::URL("https://www.dskmusic.com")),
-      keyboard(p.keyboardState, juce::MidiKeyboardComponent::horizontalKeyboard)
+    proc(p),
+    titleLink("DSK SFz player", juce::URL("https://www.dskmusic.com")),
+    siteLink("www.dskmusic.com", juce::URL("https://www.dskmusic.com")),
+    keyboard(p.keyboardState, juce::MidiKeyboardComponent::horizontalKeyboard)
 {
     setLookAndFeel(&lf);
 
+    pluginHeight = DEF_H;
+
     // Restore saved theme before buildUI so colours are applied immediately
     if (auto* s = proc.getAppProperties().getUserSettings())
+    {
         lf.setTheme(s->getIntValue("uiTheme", 0));
+        libWidth = juce::jlimit(120, 450, s->getIntValue("libWidth", 220));
+        pluginHeight = juce::jlimit(DEF_H, 1200, s->getIntValue("pluginHeight", DEF_H));
+        libraryPanel.loadState(*s);
+    }
 
     buildUI();
 
@@ -145,13 +154,8 @@ DSKSFzEditor::DSKSFzEditor(DSKSFzProcessor& p)
         else
             loadSFZForPreview(f);
     };
-    if (auto* s = proc.getAppProperties().getUserSettings())
-    {
-        libWidth = juce::jlimit(120, 450, s->getIntValue("libWidth", 220));
-        libraryPanel.loadState(*s);
-    }
 
-    setSize(libWidth + 780, HDR_H + 3 * ROW_H + FTR_H + KB_H);
+    setSize(libWidth + 780, pluginHeight);
     setResizable(false, false);  // must come AFTER setSize to lock correct dimensions
     applyWindowConstraints();
 
@@ -164,8 +168,9 @@ DSKSFzEditor::~DSKSFzEditor()
     libraryPanel.removeListener(this);
     if (auto* s = proc.getAppProperties().getUserSettings())
     {
-        s->setValue("uiTheme",  lf.getThemeIndex());
+        s->setValue("uiTheme", lf.getThemeIndex());
         s->setValue("libWidth", libWidth);
+        s->setValue("pluginHeight", pluginHeight);
         libraryPanel.saveState(*s);
         s->saveIfNeeded();
     }
@@ -178,15 +183,15 @@ void DSKSFzEditor::lookAndFeelChanged()
     const auto& t = lf.getTheme();
 
     instrNameLabel.setColour(juce::Label::textColourId, t.lcdText);
-    statusLabel.setColour   (juce::Label::textColourId, t.subtext);
+    statusLabel.setColour(juce::Label::textColourId, t.subtext);
     titleLink.setColour(juce::HyperlinkButton::textColourId, t.accent);
-    siteLink.setColour (juce::HyperlinkButton::textColourId, t.subtext);
+    siteLink.setColour(juce::HyperlinkButton::textColourId, t.subtext);
 
-    openBtn.setColour(juce::TextButton::buttonColourId,  t.sectionBg);
+    openBtn.setColour(juce::TextButton::buttonColourId, t.sectionBg);
     openBtn.setColour(juce::TextButton::textColourOffId, t.accent);
-    optionsBtn.setColour(juce::TextButton::buttonColourId,  t.sectionBg);
+    optionsBtn.setColour(juce::TextButton::buttonColourId, t.sectionBg);
     optionsBtn.setColour(juce::TextButton::textColourOffId, t.subtext);
-    rrResetBtn.setColour(juce::TextButton::buttonColourId,  t.sectionBg);
+    rrResetBtn.setColour(juce::TextButton::buttonColourId, t.sectionBg);
     rrResetBtn.setColour(juce::TextButton::textColourOffId, t.subtext);
     voicesKnob.setColour(juce::Slider::textBoxTextColourId, t.text);
 
@@ -195,17 +200,17 @@ void DSKSFzEditor::lookAndFeelChanged()
     keyboard.setColour(juce::MidiKeyboardComponent::whiteNoteColourId, wKey);
     keyboard.setColour(juce::MidiKeyboardComponent::blackNoteColourId, bKey);
     keyboard.setColour(juce::MidiKeyboardComponent::mouseOverKeyOverlayColourId, t.accent.withAlpha(0.2f));
-    keyboard.setColour(juce::MidiKeyboardComponent::keyDownOverlayColourId,      t.accent.withAlpha(0.5f));
-    keyboard.setColour(juce::MidiKeyboardComponent::keySeparatorLineColourId,     t.border);
+    keyboard.setColour(juce::MidiKeyboardComponent::keyDownOverlayColourId, t.accent.withAlpha(0.5f));
+    keyboard.setColour(juce::MidiKeyboardComponent::keySeparatorLineColourId, t.border);
 
-    const juce::Colour fxBtnBg   = t.isDark ? juce::Colour(0xFF1A2438) : t.sectionBg;
+    const juce::Colour fxBtnBg = t.isDark ? juce::Colour(0xFF1A2438) : t.sectionBg;
     const juce::Colour fxBtnBgOn = t.sectionBg.brighter(0.2f);
     for (auto* b : { &driveOnBtn, &chorusOnBtn, &delayOnBtn, &reverbOnBtn, &eqOnBtn })
     {
-        b->setColour(juce::TextButton::buttonColourId,   fxBtnBg);
+        b->setColour(juce::TextButton::buttonColourId, fxBtnBg);
         b->setColour(juce::TextButton::buttonOnColourId, fxBtnBgOn);
-        b->setColour(juce::TextButton::textColourOffId,  t.subtext);
-        b->setColour(juce::TextButton::textColourOnId,   t.accent);
+        b->setColour(juce::TextButton::textColourOffId, t.subtext);
+        b->setColour(juce::TextButton::textColourOnId, t.accent);
     }
 
     // update knob label colours
@@ -229,7 +234,7 @@ void DSKSFzEditor::addKL(juce::Slider& s, const juce::String& text)
     auto lbl = std::make_unique<juce::Label>();
     lbl->setText(text, juce::dontSendNotification);
     lbl->setFont(juce::Font(11.0f, juce::Font::bold));
-    lbl->setColour(juce::Label::textColourId,       juce::Colour(0xFFAABBCC));
+    lbl->setColour(juce::Label::textColourId, juce::Colour(0xFFAABBCC));
     lbl->setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
     lbl->setJustificationType(juce::Justification::centred);
     lbl->setInterceptsMouseClicks(false, false);
@@ -241,22 +246,39 @@ void DSKSFzEditor::mkFXBtn(juce::TextButton& b, const juce::String& name)
 {
     b.setButtonText(name);
     b.setClickingTogglesState(true);
-    b.setColour(juce::TextButton::buttonColourId,   juce::Colour(0xFF1A2438));
-    b.setColour(juce::TextButton::buttonOnColourId,  juce::Colour(0xFF00556E));
-    b.setColour(juce::TextButton::textColourOffId,  juce::Colour(0xFFAABBCC));
-    b.setColour(juce::TextButton::textColourOnId,   juce::Colour(0xFF00D4FF));
+    b.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF1A2438));
+    b.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xFF00556E));
+    b.setColour(juce::TextButton::textColourOffId, juce::Colour(0xFFAABBCC));
+    b.setColour(juce::TextButton::textColourOnId, juce::Colour(0xFF00D4FF));
     b.setTooltip(name + ": click to enable / disable");
     addAndMakeVisible(b);
 }
 
 void DSKSFzEditor::sa(juce::Slider& s, const juce::String& id)
-{ sAttach.push_back(std::make_unique<SA>(proc.params, id, s)); }
+{
+    sAttach.push_back(std::make_unique<SA>(proc.params, id, s));
+}
 
 void DSKSFzEditor::ba(juce::TextButton& b, const juce::String& id)
-{ bAttach.push_back(std::make_unique<BA>(proc.params, id, b)); }
+{
+    bAttach.push_back(std::make_unique<BA>(proc.params, id, b));
+}
 
 void DSKSFzEditor::ca(juce::ComboBox& c, const juce::String& id)
-{ cAttach.push_back(std::make_unique<CA>(proc.params, id, c)); }
+{
+    cAttach.push_back(std::make_unique<CA>(proc.params, id, c));
+}
+
+// ── Funciones de detección para tiradores ─────────────────────────────────────
+bool DSKSFzEditor::isNearDivider(int x) const
+{
+    return x >= libWidth && x <= libWidth + 5;
+}
+
+bool DSKSFzEditor::isNearHDivider(int y) const
+{
+    return y >= getHeight() - KB_H - VDIV_H && y <= getHeight() - KB_H;
+}
 
 // ── buildUI ───────────────────────────────────────────────────────────────────
 void DSKSFzEditor::buildUI()
@@ -283,7 +305,7 @@ void DSKSFzEditor::buildUI()
     statusLabel.setText("Ready", juce::dontSendNotification);
     addAndMakeVisible(statusLabel);
 
-    openBtn.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF0F3460));
+    openBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF0F3460));
     openBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xFF00D4FF));
     openBtn.setTooltip("Open an SFZ file or ZIP instrument pack");
     openBtn.onClick = [this]()
@@ -296,14 +318,14 @@ void DSKSFzEditor::buildUI()
             [this](const juce::FileChooser& fc)
             {
                 auto f = fc.getResult();
-                if (!f.existsAsFile()) return;
-                if (f.hasFileExtension(".zip")) libraryZipRequested(f);
-                else                            libraryFileRequested(f);
+        if (!f.existsAsFile()) return;
+        if (f.hasFileExtension(".zip")) libraryZipRequested(f);
+        else                            libraryFileRequested(f);
             });
     };
     addAndMakeVisible(openBtn);
 
-    optionsBtn.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF0F3460));
+    optionsBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF0F3460));
     optionsBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xFF8899AA));
     optionsBtn.setTooltip("Plugin options");
     optionsBtn.onClick = [this]()
@@ -338,8 +360,8 @@ void DSKSFzEditor::buildUI()
 
         menu.showMenuAsync(
             juce::PopupMenu::Options()
-                .withParentComponent(this)
-                .withTargetComponent(&optionsBtn),
+            .withParentComponent(this)
+            .withTargetComponent(&optionsBtn),
             [this](int r)
             {
                 if (r == 1)
@@ -352,8 +374,28 @@ void DSKSFzEditor::buildUI()
                 }
                 else if (r == 3)
                 {
-                    for (auto* p : proc.getParameters())
-                        p->setValueNotifyingHost(p->getDefaultValue());
+                    juce::AlertWindow::showAsync(
+                        juce::MessageBoxOptions()
+                        .withIconType(juce::MessageBoxIconType::QuestionIcon)
+                        .withTitle("Reset All Parameters")
+                        .withMessage("Are you sure you want to reset all parameters and interface dimensions to their default values?")
+                        .withButton("Reset")
+                        .withButton("Cancel"),
+                        [this](int result)
+                        {
+                            if (result == 1) // Si el usuario hace clic en "Reset"
+                            {
+                                // 1. Restaurar todos los parámetros de audio
+                                for (auto* p : proc.getParameters())
+                                    p->setValueNotifyingHost(p->getDefaultValue());
+
+                                // 2. Restaurar las dimensiones por defecto de la interfaz
+                                libWidth = LIB_W;
+                                pluginHeight = DEF_H;
+                                setSize(libWidth + 780, pluginHeight);
+                                applyWindowConstraints();
+                            }
+                        });
                 }
                 else if (r == 10)
                 {
@@ -374,10 +416,10 @@ void DSKSFzEditor::buildUI()
                 else if (r == 5) // Help
                 {
                     juce::DialogWindow::LaunchOptions opts;
-                    opts.dialogTitle           = "DSK SFz Player  —  Help / Ayuda";
+                    opts.dialogTitle = "DSK SFz Player  —  Help / Ayuda";
                     opts.content.setOwned(new HelpDialog());
-                    opts.resizable             = true;
-                    opts.useNativeTitleBar     = true;
+                    opts.resizable = true;
+                    opts.useNativeTitleBar = true;
                     opts.componentToCentreAround = this;
                     opts.launchAsync();
                 }
@@ -395,10 +437,10 @@ void DSKSFzEditor::buildUI()
                     dlg->addButton("Close", 0);
                     dlg->enterModalState(true,
                         juce::ModalCallbackFunction::create([](int res)
-                        {
-                            if (res == 1)
+                            {
+                                if (res == 1)
                                 juce::URL("https://www.dskmusic.com").launchInDefaultBrowser();
-                        }), true);
+                            }), true);
                 }
             });
     };
@@ -478,7 +520,7 @@ void DSKSFzEditor::buildUI()
 
     filtAKnob.setRange(0.001, 10.0, 0.001); mk(filtAKnob); addKL(filtAKnob, "A");
     filtDKnob.setRange(0.001, 10.0, 0.001); mk(filtDKnob); addKL(filtDKnob, "D");
-    filtSKnob.setRange(0.0,  100.0, 0.1);   mk(filtSKnob); addKL(filtSKnob, "S");
+    filtSKnob.setRange(0.0, 100.0, 0.1);   mk(filtSKnob); addKL(filtSKnob, "S");
     filtRKnob.setRange(0.001, 10.0, 0.001); mk(filtRKnob); addKL(filtRKnob, "R");
     filtAKnob.setTooltip("Filter env Attack");  sa(filtAKnob, "filterAttack");
     filtDKnob.setTooltip("Filter env Decay");   sa(filtDKnob, "filterDecay");
@@ -487,55 +529,55 @@ void DSKSFzEditor::buildUI()
 
     // ── MOD section ───────────────────────────────────────────────────────────
     auto buildLFO = [&](juce::ComboBox& shp, juce::ComboBox& tgt,
-                        juce::Slider& rate, juce::Slider& amt,
-                        const juce::String& shpId, const juce::String& tgtId,
-                        const juce::String& rateId, const juce::String& amtId)
+        juce::Slider& rate, juce::Slider& amt,
+        const juce::String& shpId, const juce::String& tgtId,
+        const juce::String& rateId, const juce::String& amtId)
     {
         for (auto* c : { &shp, &tgt }) addAndMakeVisible(*c);
-        shp.addItem("Sine", 1); shp.addItem("Tri",  2);
-        shp.addItem("Saw",  3); shp.addItem("Sq",   4); shp.addItem("S&H", 5);
+        shp.addItem("Sine", 1); shp.addItem("Tri", 2);
+        shp.addItem("Saw", 3); shp.addItem("Sq", 4); shp.addItem("S&H", 5);
         tgt.addItem("Pitch", 1); tgt.addItem("Cutoff", 2);
-        tgt.addItem("Pan",  3);  tgt.addItem("Vol",  4);
+        tgt.addItem("Pan", 3);  tgt.addItem("Vol", 4);
         shp.setTooltip("LFO waveform"); tgt.setTooltip("LFO modulation target");
         rate.setRange(0.1, 20.0, 0.01); rate.setTooltip("LFO rate (Hz)");
-        amt.setRange (0.0,  1.0, 0.001); amt.setTooltip("LFO depth");
+        amt.setRange(0.0, 1.0, 0.001); amt.setTooltip("LFO depth");
         mk(rate); addKL(rate, "Rate");
-        mk(amt);  addKL(amt,  "Depth");
+        mk(amt);  addKL(amt, "Depth");
         ca(shp, shpId); ca(tgt, tgtId);
         sa(rate, rateId); sa(amt, amtId);
     };
     buildLFO(lfo1ShapeBox, lfo1TgtBox, lfo1RateKnob, lfo1AmtKnob,
-             "lfo1Shape", "lfo1Target", "lfo1Rate", "lfo1Amount");
+        "lfo1Shape", "lfo1Target", "lfo1Rate", "lfo1Amount");
     buildLFO(lfo2ShapeBox, lfo2TgtBox, lfo2RateKnob, lfo2AmtKnob,
-             "lfo2Shape", "lfo2Target", "lfo2Rate", "lfo2Amount");
+        "lfo2Shape", "lfo2Target", "lfo2Rate", "lfo2Amount");
 
     // ── FX section ────────────────────────────────────────────────────────────
-    mkFXBtn(driveOnBtn,  "DRIVE");
+    mkFXBtn(driveOnBtn, "DRIVE");
     mkFXBtn(chorusOnBtn, "CHORUS");
-    mkFXBtn(delayOnBtn,  "DELAY");
+    mkFXBtn(delayOnBtn, "DELAY");
     mkFXBtn(reverbOnBtn, "REVERB");
-    mkFXBtn(eqOnBtn,     "EQ");
-    ba(driveOnBtn,  "driveOn"); ba(chorusOnBtn, "chorusOn");
-    ba(delayOnBtn,  "delayOn"); ba(reverbOnBtn, "reverbOn");
-    ba(eqOnBtn,     "eqOn");
+    mkFXBtn(eqOnBtn, "EQ");
+    ba(driveOnBtn, "driveOn"); ba(chorusOnBtn, "chorusOn");
+    ba(delayOnBtn, "delayOn"); ba(reverbOnBtn, "reverbOn");
+    ba(eqOnBtn, "eqOn");
 
     driveAmtKnob.setRange(0.0, 1.0, 0.001); mk(driveAmtKnob); addKL(driveAmtKnob, "Drive");
     driveMixKnob.setRange(0.0, 1.0, 0.001); mk(driveMixKnob); addKL(driveMixKnob, "Mix");
     sa(driveAmtKnob, "driveAmount"); sa(driveMixKnob, "driveMix");
 
-    choRateKnob.setRange(0.1, 10.0, 0.01);  mk(choRateKnob);  addKL(choRateKnob,  "Rate");
+    choRateKnob.setRange(0.1, 10.0, 0.01);  mk(choRateKnob);  addKL(choRateKnob, "Rate");
     choDepthKnob.setRange(0.0, 1.0, 0.001); mk(choDepthKnob); addKL(choDepthKnob, "Depth");
-    choMixKnob.setRange(0.0, 1.0, 0.001);   mk(choMixKnob);   addKL(choMixKnob,   "Mix");
+    choMixKnob.setRange(0.0, 1.0, 0.001);   mk(choMixKnob);   addKL(choMixKnob, "Mix");
     sa(choRateKnob, "chorusRate"); sa(choDepthKnob, "chorusDepth"); sa(choMixKnob, "chorusMix");
 
     delTimeKnob.setRange(1.0, 2000.0, 1.0); mk(delTimeKnob); addKL(delTimeKnob, "Time");
-    delFbkKnob.setRange(0.0, 0.95, 0.001);  mk(delFbkKnob);  addKL(delFbkKnob,  "Fbk");
-    delMixKnob.setRange(0.0, 1.0, 0.001);   mk(delMixKnob);  addKL(delMixKnob,  "Mix");
+    delFbkKnob.setRange(0.0, 0.95, 0.001);  mk(delFbkKnob);  addKL(delFbkKnob, "Fbk");
+    delMixKnob.setRange(0.0, 1.0, 0.001);   mk(delMixKnob);  addKL(delMixKnob, "Mix");
     sa(delTimeKnob, "delayTime"); sa(delFbkKnob, "delayFeedback"); sa(delMixKnob, "delayMix");
 
     revSizeKnob.setRange(0.0, 1.0, 0.001); mk(revSizeKnob); addKL(revSizeKnob, "Size");
     revDampKnob.setRange(0.0, 1.0, 0.001); mk(revDampKnob); addKL(revDampKnob, "Damp");
-    revMixKnob.setRange(0.0, 1.0, 0.001);  mk(revMixKnob);  addKL(revMixKnob,  "Mix");
+    revMixKnob.setRange(0.0, 1.0, 0.001);  mk(revMixKnob);  addKL(revMixKnob, "Mix");
     sa(revSizeKnob, "reverbSize"); sa(revDampKnob, "reverbDamping"); sa(revMixKnob, "reverbMix");
 
     eqLowKnob.setRange(-12.0, 12.0, 0.1);  eqLowKnob.setComponentID("bipolar");
@@ -555,18 +597,18 @@ void DSKSFzEditor::buildUI()
     addAndMakeVisible(voicesKnob);
     sa(voicesKnob, "maxVoices");
 
-    rrResetBtn.setColour(juce::TextButton::buttonColourId,  juce::Colour(0xFF0F3460));
+    rrResetBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF0F3460));
     rrResetBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xFF8899AA));
     rrResetBtn.setTooltip("Reset round-robin counters");
     rrResetBtn.onClick = [this]() { proc.getSynth().resetRoundRobin(); };
     addAndMakeVisible(rrResetBtn);
 
     // ── Piano keyboard ────────────────────────────────────────────────────────
-    keyboard.setColour(juce::MidiKeyboardComponent::whiteNoteColourId,            juce::Colour(0xFFD8E8F0));
-    keyboard.setColour(juce::MidiKeyboardComponent::blackNoteColourId,            juce::Colour(0xFF0D1828));
-    keyboard.setColour(juce::MidiKeyboardComponent::mouseOverKeyOverlayColourId,  juce::Colour(0x3300D4FF));
-    keyboard.setColour(juce::MidiKeyboardComponent::keyDownOverlayColourId,       juce::Colour(0x7700D4FF));
-    keyboard.setColour(juce::MidiKeyboardComponent::keySeparatorLineColourId,     juce::Colour(0xFF334466));
+    keyboard.setColour(juce::MidiKeyboardComponent::whiteNoteColourId, juce::Colour(0xFFD8E8F0));
+    keyboard.setColour(juce::MidiKeyboardComponent::blackNoteColourId, juce::Colour(0xFF0D1828));
+    keyboard.setColour(juce::MidiKeyboardComponent::mouseOverKeyOverlayColourId, juce::Colour(0x3300D4FF));
+    keyboard.setColour(juce::MidiKeyboardComponent::keyDownOverlayColourId, juce::Colour(0x7700D4FF));
+    keyboard.setColour(juce::MidiKeyboardComponent::keySeparatorLineColourId, juce::Colour(0xFF334466));
     keyboard.setAvailableRange(21, 108);
     keyboard.setLowestVisibleKey(36);
     keyboard.setScrollButtonsVisible(false);
@@ -595,7 +637,7 @@ void DSKSFzEditor::secBg(juce::Graphics& g, juce::Rectangle<int> r, const juce::
 }
 
 void DSKSFzEditor::drawMeter(juce::Graphics& g, int x, int y, int w, int h,
-                               float lvl, const char* ch)
+    float lvl, const char* ch)
 {
     const auto& t = lf.getTheme();
     g.setColour(t.headerBg);
@@ -626,9 +668,10 @@ void DSKSFzEditor::paint(juce::Graphics& g)
 
     g.fillAll(t.editorBg);
 
+    const int W = getWidth();
+    const int H = getHeight();
     const int rx = libWidth;
-    const int rw = getWidth() - libWidth;
-    const int H  = getHeight();
+    const int rw = W - libWidth;
 
     // Header bar
     g.setColour(t.headerBg);
@@ -638,9 +681,17 @@ void DSKSFzEditor::paint(juce::Graphics& g)
 
     // Library divider (drawn slightly wider so user can grab it)
     g.setColour(t.accent.withAlpha(0.25f));
-    g.fillRect(libWidth, 0, 2, H - KB_H);
+    g.fillRect(libWidth, 0, 2, H - KB_H - VDIV_H);
     g.setColour(t.divider);
-    g.drawLine((float)libWidth, 0.0f, (float)libWidth, (float)(H - KB_H), 1.0f);
+    g.drawLine((float)libWidth, 0.0f, (float)libWidth, (float)(H - KB_H - VDIV_H), 1.0f);
+
+    // Horizontal divider (Separador de teclado / redimensionador vertical)
+    const int divY = H - KB_H - VDIV_H;
+    g.setColour(t.accent.withAlpha(0.12f));
+    g.fillRect(0, divY, W, VDIV_H);
+    g.setColour(t.divider);
+    g.drawLine(0.0f, (float)divY, (float)W, (float)divY, 1.0f);
+    g.drawLine(0.0f, (float)(divY + VDIV_H), (float)W, (float)(divY + VDIV_H), 1.0f);
 
     const int S0 = HDR_H;
     const int S1 = S0 + ROW_H;
@@ -688,53 +739,56 @@ void DSKSFzEditor::paint(juce::Graphics& g)
         g.drawRect(getLocalBounds(), 3);
         g.setFont(juce::Font(18.0f, juce::Font::bold));
         g.drawText("Drop SFZ file, folder, or ZIP pack",
-                   getLocalBounds(), juce::Justification::centred);
+            getLocalBounds(), juce::Justification::centred);
     }
 }
 
 // ── resized ───────────────────────────────────────────────────────────────────
 void DSKSFzEditor::resized()
 {
-    const int W  = getWidth();
-    const int H  = getHeight();
+    const int W = getWidth();
+    const int H = getHeight();
     const int rx = libWidth;
     const int rw = W - libWidth;
+
+    // Los controles de la derecha conservan su posición Y anclada respecto a la parte superior
     const int S0 = HDR_H;
     const int S1 = S0 + ROW_H;
     const int S2 = S1 + ROW_H;
     const int SF = S2 + ROW_H;
 
-    libraryPanel.setBounds(0, 0, libWidth, H - KB_H);
+    // La librería ocupa todo el alto hasta el tirador horizontal
+    libraryPanel.setBounds(0, 0, libWidth, H - KB_H - VDIV_H);
     keyboard.setBounds(0, H - KB_H, W, KB_H);
     keyboard.setKeyWidth(juce::jmax(10.0f, (float)W / 52.0f));
 
     const int hdrLabelX = rx + 8;
-    titleLink.setBounds(hdrLabelX, 4,  160, 24);
-    siteLink.setBounds (hdrLabelX, 28, 120, 16);
+    titleLink.setBounds(hdrLabelX, 4, 160, 24);
+    siteLink.setBounds(hdrLabelX, 28, 120, 16);
     const int lcdX = hdrLabelX + 170;
     const int lcdW = rw - 420;
     instrNameLabel.setBounds(lcdX, 10, lcdW, 18);
-    statusLabel.setBounds   (lcdX, 28, lcdW, 16);
-    openBtn.setBounds   (rx + rw - 210, 10, 116, 28);
-    optionsBtn.setBounds(rx + rw - 90,  10,  82, 28);
+    statusLabel.setBounds(lcdX, 28, lcdW, 16);
+    openBtn.setBounds(rx + rw - 210, 10, 116, 28);
+    optionsBtn.setBounds(rx + rw - 90, 10, 82, 28);
 
     auto K = [&](juce::Slider& s, int col, int secY)
     { s.setBounds(colX(rx, col), secY + KNOB_Y, KSZ, KSZ); };
 
-    K(masterVolKnob,  0, S0); K(masterPanKnob,  1, S0);
-    K(pitchTransKnob, 2, S0); K(pitchFineKnob,  3, S0);
-    K(ampAKnob,       5, S0); K(ampDKnob,       6, S0);
-    K(ampSKnob,       7, S0); K(ampRKnob,       8, S0);
+    K(masterVolKnob, 0, S0); K(masterPanKnob, 1, S0);
+    K(pitchTransKnob, 2, S0); K(pitchFineKnob, 3, S0);
+    K(ampAKnob, 5, S0); K(ampDKnob, 6, S0);
+    K(ampSKnob, 7, S0); K(ampRKnob, 8, S0);
 
     const int mW = 10, mGap = 4;
-    const int mX    = rx + rw - 2 * (mW + mGap) - 4;
+    const int mX = rx + rw - 2 * (mW + mGap) - 4;
     const int adsrX = colX(rx, 9) + 4;
     adsrDisplay.setBounds(adsrX, S0 + KNOB_Y, mX - adsrX - 4, KSZ);
 
     {
         const int filterZoneW = rw * 54 / 100;
-        const int divX        = rx + filterZoneW;
-        const int KSM  = 36, SLOT = 42, comboW = 74;
+        const int divX = rx + filterZoneW;
+        const int KSM = 36, SLOT = 42, comboW = 74;
         const int comboY = S1 + KNOB_Y + (KSM - 20) / 2;
         int fx0 = rx + 8;
         filtTypeBox.setBounds(fx0, comboY, comboW, 20);
@@ -744,20 +798,20 @@ void DSKSFzEditor::resized()
         kx += 4;
         KF(filtAKnob); KF(filtDKnob); KF(filtSKnob); KF(filtRKnob);
 
-        const int modZoneW  = rw - filterZoneW;
+        const int modZoneW = rw - filterZoneW;
         const int lfoComboW = juce::jmin(72, (modZoneW / 2 - 8 - 2 * KSLOT));
         const int lfoComboH = 18;
         int lfo1X = divX + 8;
-        lfo1ShapeBox.setBounds(lfo1X, S1 + KNOB_Y,      lfoComboW, lfoComboH);
-        lfo1TgtBox.setBounds  (lfo1X, S1 + KNOB_Y + 22, lfoComboW, lfoComboH);
+        lfo1ShapeBox.setBounds(lfo1X, S1 + KNOB_Y, lfoComboW, lfoComboH);
+        lfo1TgtBox.setBounds(lfo1X, S1 + KNOB_Y + 22, lfoComboW, lfoComboH);
         lfo1RateKnob.setBounds(lfo1X + lfoComboW + 4, S1 + KNOB_Y, KSZ, KSZ);
-        lfo1AmtKnob.setBounds (lfo1X + lfoComboW + 4 + KSLOT, S1 + KNOB_Y, KSZ, KSZ);
+        lfo1AmtKnob.setBounds(lfo1X + lfoComboW + 4 + KSLOT, S1 + KNOB_Y, KSZ, KSZ);
 
         int lfo2X = divX + modZoneW / 2 + 4;
-        lfo2ShapeBox.setBounds(lfo2X, S1 + KNOB_Y,      lfoComboW, lfoComboH);
-        lfo2TgtBox.setBounds  (lfo2X, S1 + KNOB_Y + 22, lfoComboW, lfoComboH);
+        lfo2ShapeBox.setBounds(lfo2X, S1 + KNOB_Y, lfoComboW, lfoComboH);
+        lfo2TgtBox.setBounds(lfo2X, S1 + KNOB_Y + 22, lfoComboW, lfoComboH);
         lfo2RateKnob.setBounds(lfo2X + lfoComboW + 4, S1 + KNOB_Y, KSZ, KSZ);
-        lfo2AmtKnob.setBounds (lfo2X + lfoComboW + 4 + KSLOT, S1 + KNOB_Y, KSZ, KSZ);
+        lfo2AmtKnob.setBounds(lfo2X + lfoComboW + 4 + KSLOT, S1 + KNOB_Y, KSZ, KSZ);
     }
 
     const int fxSlot = (rw - 6) / 5;
@@ -773,10 +827,10 @@ void DSKSFzEditor::resized()
     {
         const int x0 = rx + 3 + i * fxSlot;
         fxSlots[i].btn->setBounds(x0 + 2, S2 + 4, fxSlot - 4, 14);
-        const int nk    = (int)fxSlots[i].knobs.size();
+        const int nk = (int)fxSlots[i].knobs.size();
         const int avail = fxSlot - 4;
-        const int kw    = juce::jmin(KSZ, (avail - (nk - 1) * 2) / nk);
-        const int kx0   = x0 + 2 + (avail - nk * kw - (nk - 1) * 2) / 2;
+        const int kw = juce::jmin(KSZ, (avail - (nk - 1) * 2) / nk);
+        const int kx0 = x0 + 2 + (avail - nk * kw - (nk - 1) * 2) / 2;
         for (int j = 0; j < nk; ++j)
             fxSlots[i].knobs[j]->setBounds(kx0 + j * (kw + 2), S2 + KNOB_Y + 2, kw, kw);
     }
@@ -804,8 +858,8 @@ void DSKSFzEditor::timerCallback()
         auto* p = proc.params.getRawParameterValue(id);
         return p ? p->load() : 0.0f;
     };
-    adsrDisplay.attack  = gf("ampAttack");
-    adsrDisplay.decay   = gf("ampDecay");
+    adsrDisplay.attack = gf("ampAttack");
+    adsrDisplay.decay = gf("ampDecay");
     adsrDisplay.sustain = gf("ampSustain");
     adsrDisplay.release = gf("ampRelease");
     adsrDisplay.repaint();
@@ -825,23 +879,27 @@ void DSKSFzEditor::timerCallback()
 
 // ── PC keyboard → MIDI note forwarding ───────────────────────────────────────
 bool DSKSFzEditor::keyPressed(const juce::KeyPress& key)
-{ return keyboard.keyPressed(key); }
+{
+    return keyboard.keyPressed(key);
+}
 
 bool DSKSFzEditor::keyStateChanged(bool isKeyDown)
-{ return keyboard.keyStateChanged(isKeyDown); }
+{
+    return keyboard.keyStateChanged(isKeyDown);
+}
 
 // ── Library callbacks ─────────────────────────────────────────────────────────
 void DSKSFzEditor::libraryFileRequested(const juce::File& sfzFile)
 {
     statusLabel.setText("Loading...", juce::dontSendNotification);
     juce::Thread::launch([this, sfzFile]()
-    {
-        proc.loadSFZ(sfzFile);
-        juce::MessageManager::callAsync([this]()
+        {
+            proc.loadSFZ(sfzFile);
+    juce::MessageManager::callAsync([this]()
         {
             statusLabel.setText("Ready", juce::dontSendNotification);
         });
-    });
+        });
 }
 
 void DSKSFzEditor::libraryZipRequested(const juce::File& zipFile)
@@ -901,45 +959,70 @@ void DSKSFzEditor::filesDropped(const juce::StringArray& files, int, int)
     }
 }
 
-// ── Divider drag (adjustable library width) ───────────────────────────────────
+// ── Divider drag (adjustable library width and window height) ─────────────────
 void DSKSFzEditor::mouseMove(const juce::MouseEvent& e)
 {
-    setMouseCursor(isNearDivider(e.x)
-        ? juce::MouseCursor::LeftRightResizeCursor
-        : juce::MouseCursor::NormalCursor);
+    bool nearV = isNearDivider(e.x) && e.y < getHeight() - KB_H - VDIV_H;
+    bool nearH = isNearHDivider(e.y);
+
+    if (nearV)       setMouseCursor(juce::MouseCursor::LeftRightResizeCursor);
+    else if (nearH)  setMouseCursor(juce::MouseCursor::UpDownResizeCursor);
+    else             setMouseCursor(juce::MouseCursor::NormalCursor);
 }
 
 void DSKSFzEditor::mouseDown(const juce::MouseEvent& e)
 {
-    if (!isNearDivider(e.x)) return;
+    bool nearV = isNearDivider(e.x) && e.y < getHeight() - KB_H - VDIV_H;
+    bool nearH = isNearHDivider(e.y);
 
-    // Si detecta un doble clic, restaura el ancho por defecto y cancela el arrastre
+    if (!nearV && !nearH) return;
+
     if (e.getNumberOfClicks() >= 2)
     {
-        libWidth = LIB_W;
-        setSize(libWidth + 780, getHeight());
+        if (nearV) libWidth = LIB_W;
+        if (nearH) pluginHeight = DEF_H;
+
+        setSize(libWidth + 780, pluginHeight);
         applyWindowConstraints();
         return;
     }
 
-    isDraggingDivider = true;
-    libWidthAtDragStart = libWidth;
-    dragStartX = e.x;
+    if (nearV)
+    {
+        isDraggingDivider = true;
+        libWidthAtDragStart = libWidth;
+        dragStartX = e.x;
+    }
+
+    if (nearH)
+    {
+        isDraggingHDivider = true;
+        pluginHeightAtDragStart = pluginHeight;
+        dragStartY = e.y;
+    }
+
     if (auto* c = getConstrainer())
-        c->setSizeLimits(120 + 780, getHeight(), 450 + 780, getHeight());
+        c->setSizeLimits(120 + 780, DEF_H, 450 + 780, 1200);
 }
 
 void DSKSFzEditor::mouseDrag(const juce::MouseEvent& e)
 {
-    if (!isDraggingDivider) return;
-    libWidth = juce::jlimit(120, 450, libWidthAtDragStart + (e.x - dragStartX));
-    setSize(libWidth + 780, getHeight());
+    if (!isDraggingDivider && !isDraggingHDivider) return;
+
+    if (isDraggingDivider)
+        libWidth = juce::jlimit(120, 450, libWidthAtDragStart + (e.x - dragStartX));
+
+    if (isDraggingHDivider)
+        pluginHeight = juce::jlimit(DEF_H, 1200, pluginHeightAtDragStart + (e.y - dragStartY));
+
+    setSize(libWidth + 780, pluginHeight);
 }
 
 void DSKSFzEditor::mouseUp(const juce::MouseEvent&)
 {
-    if (!isDraggingDivider) return;
+    if (!isDraggingDivider && !isDraggingHDivider) return;
     isDraggingDivider = false;
+    isDraggingHDivider = false;
     applyWindowConstraints();
 }
 
@@ -961,12 +1044,12 @@ void DSKSFzEditor::loadSFZForPreview(const juce::File& f)
 {
     statusLabel.setText("Loading...", juce::dontSendNotification);
     juce::Thread::launch([this, f]()
-    {
-        proc.loadSFZ(f);
-        juce::MessageManager::callAsync([this]()
+        {
+            proc.loadSFZ(f);
+    juce::MessageManager::callAsync([this]()
         {
             statusLabel.setText("Ready", juce::dontSendNotification);
-            triggerPreviewNote();
+    triggerPreviewNote();
         });
-    });
+        });
 }
