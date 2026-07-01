@@ -47,12 +47,12 @@ jobs:
           cmake --build build --config Release
       - name: Comprimir artefactos
         shell: powershell
-        run: Compress-Archive -Path build/DSKSFzPlayer_artefacts/Release/standalone, build/DSKSFzPlayer_artefacts/Release/vst3 -DestinationPath DSK_SFz_player_windows.zip
+        run: Compress-Archive -Path build/DSKSFzPlayer_artefacts/Release/* -DestinationPath DSK-SFz-Player-Windows.zip
       - name: Subir artefactos Windows
         uses: actions/upload-artifact@v4
         with:
-          name: DSK_SFz_player_windows
-          path: DSK_SFz_player_windows.zip
+          name: DSK-SFz-Player-Windows
+          path: DSK-SFz-Player-Windows.zip
 
   build-macos:
     if: ${{ inputs.build_macos }}
@@ -65,12 +65,12 @@ jobs:
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
       - name: Comprimir artefactos
-        run: cd build/DSKSFzPlayer_artefacts/Release && zip -r ../../../DSK_SFz_player_macos.zip standalone vst3
+        run: zip -r DSK-SFz-Player-macOS.zip build/DSKSFzPlayer_artefacts/Release/*
       - name: Subir artefactos macOS
         uses: actions/upload-artifact@v4
         with:
-          name: DSK_SFz_player_macos
-          path: DSK_SFz_player_macos.zip
+          name: DSK-SFz-Player-macOS
+          path: DSK-SFz-Player-macOS.zip
 
   build-linux:
     if: ${{ inputs.build_linux }}
@@ -84,17 +84,13 @@ jobs:
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
-      # --- NUEVO PASO PARA DIAGNOSTICAR EL PROBLEMA ---
-      - name: Ver estructura de archivos
-        run: ls -R build/DSKSFzPlayer_artefacts/
-      # ------------------------------------------------
       - name: Comprimir artefactos
-        run: cd build/DSKSFzPlayer_artefacts/Release && zip -r ../../../DSK_SFz_player_linux.zip standalone vst3
+        run: zip -r DSK-SFz-Player-Linux.zip build/DSKSFzPlayer_artefacts/Release/*
       - name: Subir artefactos Linux
         uses: actions/upload-artifact@v4
         with:
-          name: DSK_SFz_player_linux
-          path: DSK_SFz_player_linux.zip
+          name: DSK-SFz-Player-Linux
+          path: DSK-SFz-Player-Linux.zip
 
   release:
     needs: [build-windows, build-macos, build-linux]
