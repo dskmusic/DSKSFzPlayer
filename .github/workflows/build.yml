@@ -47,12 +47,12 @@ jobs:
           cmake --build build --config Release
       - name: Comprimir artefactos
         shell: powershell
-        run: Compress-Archive -Path build/DSKSFzPlayer_artefacts/Release/* -DestinationPath DSK-SFz-Player-Windows.zip
+        run: Compress-Archive -Path build/DSKSFzPlayer_artefacts/Release/* -DestinationPath DSK_SFz_player_windows.zip
       - name: Subir artefactos Windows
         uses: actions/upload-artifact@v4
         with:
-          name: DSK-SFz-Player-Windows
-          path: DSK-SFz-Player-Windows.zip
+          name: DSK_SFz_player_windows
+          path: DSK_SFz_player_windows.zip
 
   build-macos:
     if: ${{ inputs.build_macos }}
@@ -65,12 +65,12 @@ jobs:
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
       - name: Comprimir artefactos
-        run: zip -r DSK-SFz-Player-macOS.zip build/DSKSFzPlayer_artefacts/Release/*
+        run: zip -r DSK_SFz_player_macos.zip build/DSKSFzPlayer_artefacts/Release/*
       - name: Subir artefactos macOS
         uses: actions/upload-artifact@v4
         with:
-          name: DSK-SFz-Player-macOS
-          path: DSK-SFz-Player-macOS.zip
+          name: DSK_SFz_player_macos
+          path: DSK_SFz_player_macos.zip
 
   build-linux:
     if: ${{ inputs.build_linux }}
@@ -85,12 +85,12 @@ jobs:
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
       - name: Comprimir artefactos
-        run: zip -r DSK-SFz-Player-Linux.zip build/DSKSFzPlayer_artefacts/Release/*
+        run: zip -r DSK_SFz_player_linux.zip build/DSKSFzPlayer_artefacts/Release/*
       - name: Subir artefactos Linux
         uses: actions/upload-artifact@v4
         with:
-          name: DSK-SFz-Player-Linux
-          path: DSK-SFz-Player-Linux.zip
+          name: DSK_SFz_player_linux
+          path: DSK_SFz_player_linux.zip
 
   release:
     needs: [build-windows, build-macos, build-linux]
