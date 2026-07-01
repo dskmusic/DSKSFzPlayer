@@ -25,6 +25,11 @@
 * **Automation:** Real-time parameter automation for dynamic performances.
 * **Customizable Interface:** Fully resizeable window with multiple theme options and tooltips.
 
+
+<div align="center">
+  <img src="screenshots/dsk_sfz_player_themes.png" alt="DSK SFz Player themes" width="600"/>
+</div>
+
 ---
 
 ## 🎹 Quick Start
