@@ -23,6 +23,8 @@
     * Two versatile LFOs.
     * Five built-in effects.
 * **Automation:** Real-time parameter automation for dynamic performances.
+* **Intuitive Library Management:** Effortlessly organize, browse, and manage your growing collection of instrument libraries.
+* **Favorites System:** Quickly tag and access your most-used instruments for instant recall.
 * **Customizable Interface:** Fully resizeable window with multiple theme options and tooltips.
 
 
