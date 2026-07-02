@@ -60,6 +60,7 @@ target_sources(DSKSFzPlayer
         src/SF2/SF2Synth.cpp
         src/Effects/EffectsChain.cpp
         src/UI/LibraryPanel.cpp
+        src/UI/SF2PresetPicker.cpp
 )
 
 target_include_directories(DSKSFzPlayer

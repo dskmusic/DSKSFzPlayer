@@ -1,7 +1,6 @@
 #include <JuceHeader.h>
 #include "PluginEditor.h"
-#include <map>
-#include <set>
+#include "UI/SF2PresetPicker.h"
 
 // ── Help dialog ───────────────────────────────────────────────────────────────
 class HelpDialog : public juce::Component
@@ -924,7 +923,7 @@ void DSKSFzEditor::timerCallback()
         for (auto& p : presets)
             if (p.index == curIdx) { name += "  -  " + p.name; break; }
     }
-    if (hasPresetChoice) name += "  ▾"; // ▾ indica que el nombre es clicable (selector de preset)
+    if (hasPresetChoice) name += "  [+]"; // [+] indica que el nombre es clicable (selector de preset)
     instrNameLabel.setText(name, juce::dontSendNotification);
     instrNameLabel.setTooltip(hasPresetChoice ? "Click to choose bank/preset" : "");
     instrNameLabel.onClick = hasPresetChoice ? std::function<void()>([this]() { showPresetPicker(); }) : nullptr;
@@ -1209,28 +1208,8 @@ void DSKSFzEditor::showPresetPicker()
     auto& presets = proc.getSF2Presets();
     if (presets.empty()) return;
 
-    juce::PopupMenu menu;
-    std::map<int, juce::PopupMenu> bankMenus;
-    std::set<int> banks;
-    for (auto& p : presets) banks.insert(p.bank);
+    auto picker = std::make_unique<SF2PresetPicker>(presets, proc.getSF2CurrentPresetIndex());
+    picker->onPresetChosen = [this](int presetIndex) { proc.selectSF2Preset(presetIndex); };
 
-    if (banks.size() > 1)
-    {
-        for (auto& p : presets)
-            bankMenus[p.bank].addItem(p.index + 1, p.name, true, p.index == proc.getSF2CurrentPresetIndex());
-        for (auto& b : banks)
-            menu.addSubMenu("Bank " + juce::String(b), bankMenus[b]);
-    }
-    else
-    {
-        for (auto& p : presets)
-            menu.addItem(p.index + 1, p.name, true, p.index == proc.getSF2CurrentPresetIndex());
-    }
-
-    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&instrNameLabel),
-        [this](int result)
-        {
-            if (result > 0)
-                proc.selectSF2Preset(result - 1);
-        });
+    juce::CallOutBox::launchAsynchronously(std::move(picker), instrNameLabel.getScreenBounds(), this);
 }

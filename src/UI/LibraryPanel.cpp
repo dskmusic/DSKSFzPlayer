@@ -379,7 +379,7 @@ void FavoritesFileItem::itemClicked(const juce::MouseEvent& e)
     juce::PopupMenu moveMenu;
     // Can move to root if in a folder, or to a folder if at root
     if (fi != -1)
-        moveMenu.addItem(198, "[*] Favorites (no folder)");
+        moveMenu.addItem(198, "Favorites (no folder)");
     for (int i = 0; i < (int)fav->folders.size(); ++i)
         if (i != fi)
             moveMenu.addItem(200 + i, fav->folders[i].name);
@@ -584,10 +584,8 @@ void FavoritesRootItem::paintItem(juce::Graphics& g, int w, int h)
     if (isSelected()) g.fillAll(t.favSel);
 
     g.setColour(t.favGold);
-    g.setFont(juce::Font(12.0f, juce::Font::bold));
-    g.drawText(juce::String::fromUTF8("\xe2\x98\x85"), 4, 0, 18, h, juce::Justification::centred);
     g.setFont(juce::Font(12.5f, juce::Font::bold));
-    g.drawText("FAVORITES", 24, 0, w - 26, h, juce::Justification::centredLeft);
+    g.drawText("FAVORITES", 8, 0, w - 10, h, juce::Justification::centredLeft);
 
     g.setColour(t.libDim);
     g.setFont(juce::Font(10.0f));
@@ -928,7 +926,7 @@ void LibraryPanel::showAddToFavoritesMenu(const juce::File& sfzFile,
 
     juce::PopupMenu folderMenu;
     // Option: add directly to Favorites root (no folder)
-    folderMenu.addItem(98, "[*] Favorites (no folder)");
+    folderMenu.addItem(98, "Favorites (no folder)");
     if (!favorites.folders.empty())
     {
         folderMenu.addSeparator();
