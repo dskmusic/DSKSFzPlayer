@@ -239,6 +239,9 @@ private:
 
     std::unique_ptr<juce::FileChooser> fileChooser;
     juce::Image bannerImage;
+    juce::String bannerClickUrl { "https://www.dskmusic.com/high-quality-instruments/" }; // fallback si no hay banner remoto
+    std::shared_ptr<std::atomic<bool>> bannerStillAlive { std::make_shared<std::atomic<bool>>(true) };
+    void fetchRemoteBanner();
     juce::String savedTreeOpenState;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LibraryPanel)

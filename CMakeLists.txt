@@ -41,10 +41,6 @@ juce_add_plugin(DSKSFzPlayer
     ICON_SMALL "${CMAKE_CURRENT_SOURCE_DIR}/Resources/icon.png"
 )
 
-target_sources(DSKSFzPlayer PRIVATE
-    Resources/lcd_background.png
-)
-
 # Genera JuceHeader.h con todos los módulos enlazados
 juce_generate_juce_header(DSKSFzPlayer)
 
@@ -61,6 +57,7 @@ target_sources(DSKSFzPlayer
         src/Effects/EffectsChain.cpp
         src/UI/LibraryPanel.cpp
         src/UI/SF2PresetPicker.cpp
+        src/UI/RemoteBanner.cpp
 )
 
 target_include_directories(DSKSFzPlayer

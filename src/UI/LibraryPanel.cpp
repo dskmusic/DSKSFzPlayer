@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "LibraryPanel.h"
 #include "DSKLookAndFeel.h"
+#include "RemoteBanner.h"
 
 // ── theme helper —————————————————————————————————————————————————————————————
 static DSKTheme libTheme(const juce::Component* c)
@@ -762,13 +763,39 @@ LibraryPanel::LibraryPanel()
     bannerImage = juce::ImageCache::getFromMemory(BinaryData::banner_png,
         BinaryData::banner_pngSize);
 
+    fetchRemoteBanner();
+
     refreshTree();
 }
 
 LibraryPanel::~LibraryPanel()
 {
+    bannerStillAlive->store(false);
     favoritesRootItem = nullptr;
     treeView.setRootItem(nullptr);
+}
+
+// Descarga banner.json + imagen en un hilo aparte; si tiene éxito, sustituye el
+// banner embebido. Si falla por cualquier motivo (red, JSON inválido, imagen
+// corrupta) el banner/URL embebidos de fallback quedan como están, sin más.
+void LibraryPanel::fetchRemoteBanner()
+{
+    auto aliveFlag = bannerStillAlive;
+    juce::Thread::launch([this, aliveFlag]
+    {
+        auto result = RemoteBanner::fetchBlocking();
+        if (!result.ok)
+            return;
+
+        juce::MessageManager::callAsync([this, aliveFlag, result]
+        {
+            if (!aliveFlag->load())
+                return; // el LibraryPanel ya se destruyó
+            bannerImage    = result.image;
+            bannerClickUrl = result.url;
+            repaint();
+        });
+    });
 }
 
 void LibraryPanel::lookAndFeelChanged()
@@ -818,7 +845,10 @@ juce::Rectangle<int> LibraryPanel::getBannerBounds() const
 void LibraryPanel::mouseDown(const juce::MouseEvent& e)
 {
     if (bannerImage.isValid() && getBannerBounds().contains(e.getPosition()))
-        juce::URL("https://www.dskmusic.com/high-quality-instruments/").launchInDefaultBrowser();
+    {
+        RemoteBanner::trackClickAsync(bannerClickUrl);
+        juce::URL(bannerClickUrl).launchInDefaultBrowser();
+    }
 }
 
 void LibraryPanel::mouseMove(const juce::MouseEvent& e)
