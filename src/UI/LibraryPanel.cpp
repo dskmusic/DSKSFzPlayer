@@ -203,7 +203,7 @@ void LibraryTreeItem::populateChildren()
         {
             // Escanear si hay algún archivo jugable dentro de esta carpeta (o sus subcarpetas)
             juce::Array<juce::File> playableFiles;
-            child.findChildFiles(playableFiles, juce::File::findFiles, true, "*.sfz;*.zip;*.SFZ;*.ZIP");
+            child.findChildFiles(playableFiles, juce::File::findFiles, true, "*.sfz;*.sf2;*.zip;*.SFZ;*.SF2;*.ZIP");
 
             // Solo mostramos la carpeta si tiene al menos un SFZ o ZIP dentro
             if (!playableFiles.isEmpty())
@@ -218,9 +218,10 @@ void LibraryTreeItem::populateChildren()
         else
         {
             juce::String ext = child.getFileExtension().toLowerCase();
-            if (ext == ".sfz" || ext == ".zip")
+            if (ext == ".sfz" || ext == ".sf2" || ext == ".zip")
             {
-                auto* item = new LibraryTreeItem(ext == ".sfz" ? Type::SFZFile : Type::ZIPFile, child);
+                auto* item = new LibraryTreeItem(
+                    ext == ".sfz" ? Type::SFZFile : (ext == ".sf2" ? Type::SF2File : Type::ZIPFile), child);
                 item->onFileActivated = onFileActivated;
                 item->onSFZRightClicked = onSFZRightClicked;
                 item->onSFZPreview = onSFZPreview;
@@ -242,6 +243,7 @@ void LibraryTreeItem::paintItem(juce::Graphics& g, int w, int h)
     case Type::RootFolder: icon = "[R]"; col = t.accent;   break;
     case Type::SubFolder:  icon = "[F]"; col = t.libDim;   break;
     case Type::SFZFile:    icon = "[S]"; col = t.accent2;  break;
+    case Type::SF2File:    icon = "[2]"; col = t.favAmber; break;
     case Type::ZIPFile:    icon = "[Z]"; col = t.accent;   break;
     }
 
@@ -266,11 +268,11 @@ void LibraryTreeItem::itemClicked(const juce::MouseEvent& e)
 {
     if (e.mods.isRightButtonDown())
     {
-        if (type == Type::SFZFile && onSFZRightClicked)
+        if ((type == Type::SFZFile || type == Type::SF2File) && onSFZRightClicked)
             onSFZRightClicked(file, e);
         return;
     }
-    if (type == Type::SFZFile && e.x < 28 && onSFZPreview)
+    if ((type == Type::SFZFile || type == Type::SF2File) && e.x < 28 && onSFZPreview)
         onSFZPreview(file);
 }
 
@@ -1042,7 +1044,7 @@ void LibraryPanel::runSearch(const juce::String& query)
         juce::File folder(path);
         if (!folder.isDirectory()) continue;
         juce::Array<juce::File> found;
-        folder.findChildFiles(found, juce::File::findFiles, true, "*.sfz");
+        folder.findChildFiles(found, juce::File::findFiles, true, "*.sfz;*.sf2");
         for (auto& f : found)
         {
             if (f.getFileNameWithoutExtension().toLowerCase().contains(lq) ||

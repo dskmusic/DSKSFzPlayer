@@ -79,7 +79,17 @@ private:
     // ── Header ────────────────────────────────────────────────────────────────
     juce::HyperlinkButton titleLink;
     juce::HyperlinkButton siteLink;
-    juce::Label           instrNameLabel;
+
+    // Label clicable — abre el selector de banco/preset SF2 al pulsar
+    class ClickableLabel : public juce::Label {
+    public:
+        std::function<void()> onClick;
+        void mouseUp(const juce::MouseEvent& e) override {
+            juce::Label::mouseUp(e);
+            if (isEnabled() && contains(e.getPosition()) && onClick) onClick();
+        }
+    };
+    ClickableLabel        instrNameLabel;
     juce::Label           statusLabel;
 
     // Variante del TextButton para poder capturar el evento real del ratón
@@ -94,7 +104,7 @@ private:
     };
     FavButton             addFavBtn;
 
-    juce::TextButton      openBtn{ "Open SFZ / ZIP" };
+    juce::TextButton      openBtn{ "Open SFZ/SF2/ZIP" };
     juce::TextButton      optionsBtn{ "Options" };
 
     // ── AMP section ───────────────────────────────────────────────────────────
@@ -155,7 +165,11 @@ private:
     void ca(juce::ComboBox& c, const juce::String& id);
     void applyWindowConstraints();
     void triggerPreviewNote();
-    void loadSFZForPreview(const juce::File& f);
+    void loadInstrumentForPreview(const juce::File& f);
+
+    // SF2 bank/preset selector — PopupMenu, se abre al hacer click en instrNameLabel
+    void showPresetPicker();
+    void onInstrumentLoaded(); // llamado tras cargar: auto-abre el selector si procede
 
     // Funciones de detección de tiradores
     bool isNearDivider(int x) const;

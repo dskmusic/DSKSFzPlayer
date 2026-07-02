@@ -57,6 +57,7 @@ target_sources(DSKSFzPlayer
         src/PluginEditor.cpp
         src/SFZ/SFZParser.cpp
         src/SFZ/SFZSynth.cpp
+        src/SF2/SF2Synth.cpp
         src/Effects/EffectsChain.cpp
         src/UI/LibraryPanel.cpp
 )
@@ -64,6 +65,9 @@ target_sources(DSKSFzPlayer
 target_include_directories(DSKSFzPlayer
     PRIVATE
         src
+        # TinySoundFont (tsf.h) vendorizado directamente en el repo:
+        # librería de un único header, no requiere descarga por CMake.
+        "${CMAKE_CURRENT_SOURCE_DIR}/libs/tinysoundfont"
 )
 
 # ──────────────────────────────────────────────────────────────────────────────

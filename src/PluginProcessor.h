@@ -2,7 +2,10 @@
 #include <JuceHeader.h>
 #include <mutex>
 #include "SFZ/SFZSynth.h"
+#include "SF2/SF2Synth.h"
 #include "Effects/EffectsChain.h"
+
+enum class InstrumentFormat { SFZ, SF2 };
 
 class DSKSFzProcessor : public juce::AudioProcessor
 {
@@ -37,11 +40,22 @@ public:
     // Piano keyboard state — driven by UI keyboard + incoming MIDI
     juce::MidiKeyboardState keyboardState;
 
-    SFZSynth&     getSynth() { return synth; }
-    EffectsChain& getFX()    { return fx; }
+    SFZSynth&     getSynth()   { return synth; }
+    SF2Synth&     getSF2Synth(){ return sf2synth; }
+    EffectsChain& getFX()      { return fx; }
 
-    bool       loadSFZ(const juce::File& file);
+    bool       loadInstrument(const juce::File& file);
     juce::File getCurrentSFZFile() const { return currentSFZFile; }
+
+    InstrumentFormat getCurrentFormat() const { return currentFormat; }
+    bool isSF2Loaded() const { return currentFormat == InstrumentFormat::SF2 && sf2synth.isLoaded(); }
+
+    const std::vector<SF2Synth::Preset>& getSF2Presets() const { return sf2synth.getPresets(); }
+    bool selectSF2Preset(int presetIndex);
+    int  getSF2CurrentPresetIndex() const { return sf2synth.getCurrentPresetIndex(); }
+
+    void allNotesOff();
+    void resetRoundRobin();
 
     juce::ApplicationProperties& getAppProperties() { return appProperties; }
 
@@ -51,8 +65,10 @@ public:
 private:
     std::mutex   loadMutex;
     SFZSynth     synth;
+    SF2Synth     sf2synth;
     EffectsChain fx;
     juce::File   currentSFZFile;
+    InstrumentFormat currentFormat { InstrumentFormat::SFZ };
 
     juce::ApplicationProperties appProperties;
 

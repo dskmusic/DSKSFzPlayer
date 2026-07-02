@@ -2,6 +2,7 @@
 .backup/
 .claude/
 .versiones/
+.tokensave/
 instrucciones.txt
 TODO.txt
 

@@ -36,7 +36,7 @@ public:
 class LibraryTreeItem : public juce::TreeViewItem
 {
 public:
-    enum class Type { RootFolder, SubFolder, SFZFile, ZIPFile };
+    enum class Type { RootFolder, SubFolder, SFZFile, SF2File, ZIPFile };
 
     std::function<void(const juce::File&, bool)>                    onFileActivated;
     std::function<void(const juce::File&, const juce::MouseEvent&)> onSFZRightClicked;

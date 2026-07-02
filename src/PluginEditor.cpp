@@ -1,5 +1,7 @@
 #include <JuceHeader.h>
 #include "PluginEditor.h"
+#include <map>
+#include <set>
 
 // ── Help dialog ───────────────────────────────────────────────────────────────
 class HelpDialog : public juce::Component
@@ -152,7 +154,7 @@ DSKSFzEditor::DSKSFzEditor(DSKSFzProcessor& p)
         if (f == proc.getCurrentSFZFile())
             triggerPreviewNote();
         else
-            loadSFZForPreview(f);
+            loadInstrumentForPreview(f);
     };
 
     setSize(libWidth + 780, pluginHeight);
@@ -346,12 +348,12 @@ void DSKSFzEditor::buildUI()
 
     openBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF0F3460));
     openBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xFF00D4FF));
-    openBtn.setTooltip("Open an SFZ file or ZIP instrument pack");
+    openBtn.setTooltip("Open an SFZ or SF2 file, or a ZIP instrument pack");
     openBtn.onClick = [this]()
     {
         fileChooser = std::make_unique<juce::FileChooser>(
-            "Open SFZ instrument", proc.getCurrentSFZFile().getParentDirectory(),
-            "*.sfz;*.SFZ;*.zip;*.ZIP");
+            "Open SFZ/SF2 instrument", proc.getCurrentSFZFile().getParentDirectory(),
+            "*.sfz;*.SFZ;*.sf2;*.SF2;*.zip;*.ZIP");
         fileChooser->launchAsync(
             juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
             [this](const juce::FileChooser& fc)
@@ -405,11 +407,11 @@ void DSKSFzEditor::buildUI()
             {
                 if (r == 1)
                 {
-                    proc.getSynth().allNotesOff();
+                    proc.allNotesOff();
                 }
                 else if (r == 2)
                 {
-                    proc.getSynth().resetRoundRobin();
+                    proc.resetRoundRobin();
                 }
                 else if (r == 3)
                 {
@@ -467,9 +469,9 @@ void DSKSFzEditor::buildUI()
                     auto* dlg = new juce::AlertWindow(
                         "DSK SFz player",
                         "Version 1.0  |  DSK Music\n\n"
-                        "64-voice polyphonic SFZ sampler.\n"
+                        "64-voice polyphonic SFZ/SF2 sampler.\n"
                         "Supports WAV, FLAC, and OGG formats.\n\n"
-                        "Drop SFZ, folder, or ZIP onto the plugin window to load.\n\n"
+                        "Drop SFZ, SF2, folder, or ZIP onto the plugin window to load.\n\n"
                         "Click \"Visit Website\" to open www.dskmusic.com",
                         juce::AlertWindow::InfoIcon, this);
                     dlg->addButton("Visit Website", 1);
@@ -639,7 +641,7 @@ void DSKSFzEditor::buildUI()
     rrResetBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF0F3460));
     rrResetBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xFF8899AA));
     rrResetBtn.setTooltip("Reset round-robin counters");
-    rrResetBtn.onClick = [this]() { proc.getSynth().resetRoundRobin(); };
+    rrResetBtn.onClick = [this]() { proc.resetRoundRobin(); };
     addAndMakeVisible(rrResetBtn);
 
     // ── Piano keyboard ────────────────────────────────────────────────────────
@@ -794,7 +796,7 @@ void DSKSFzEditor::paintOverChildren(juce::Graphics& g)
 
         g.setColour(t.accent);
         g.setFont(juce::Font(18.0f, juce::Font::bold));
-        g.drawText("Drop SFZ file, folder, or ZIP pack",
+        g.drawText("Drop SFZ/SF2 file, folder, or ZIP pack",
             getLocalBounds(), juce::Justification::centred);
     }
 }
@@ -911,12 +913,40 @@ void DSKSFzEditor::resized()
 void DSKSFzEditor::timerCallback()
 {
     auto sfz = proc.getCurrentSFZFile();
-    instrNameLabel.setText(
-        sfz.existsAsFile() ? sfz.getFileNameWithoutExtension() : "No instrument loaded",
-        juce::dontSendNotification);
+    const bool sf2Mode = proc.isSF2Loaded();
+    const bool hasPresetChoice = sf2Mode && proc.getSF2Presets().size() > 1;
+
+    juce::String name = sfz.existsAsFile() ? sfz.getFileNameWithoutExtension() : "No instrument loaded";
+    if (sf2Mode)
+    {
+        const auto& presets = proc.getSF2Presets();
+        const int curIdx = proc.getSF2CurrentPresetIndex();
+        for (auto& p : presets)
+            if (p.index == curIdx) { name += "  -  " + p.name; break; }
+    }
+    if (hasPresetChoice) name += "  ▾"; // ▾ indica que el nombre es clicable (selector de preset)
+    instrNameLabel.setText(name, juce::dontSendNotification);
+    instrNameLabel.setTooltip(hasPresetChoice ? "Click to choose bank/preset" : "");
+    instrNameLabel.onClick = hasPresetChoice ? std::function<void()>([this]() { showPresetPicker(); }) : nullptr;
+
     statusLabel.setText(
         proc.isLoadingInstrument.load() ? "Loading..." : "Ready",
         juce::dontSendNotification);
+
+    // Amp ADSR / Filter / Mod no aplican a SF2 (TinySoundFont ya aplica la
+    // envolvente/filtro/modulación propia de cada preset)
+    for (auto* c : { (juce::Component*)&ampAKnob, (juce::Component*)&ampDKnob,
+                     (juce::Component*)&ampSKnob, (juce::Component*)&ampRKnob,
+                     (juce::Component*)&adsrDisplay,
+                     (juce::Component*)&filtTypeBox, (juce::Component*)&filtCutKnob,
+                     (juce::Component*)&filtResKnob, (juce::Component*)&filtEnvKnob,
+                     (juce::Component*)&filtAKnob, (juce::Component*)&filtDKnob,
+                     (juce::Component*)&filtSKnob, (juce::Component*)&filtRKnob,
+                     (juce::Component*)&lfo1ShapeBox, (juce::Component*)&lfo1TgtBox,
+                     (juce::Component*)&lfo2ShapeBox, (juce::Component*)&lfo2TgtBox,
+                     (juce::Component*)&lfo1RateKnob, (juce::Component*)&lfo1AmtKnob,
+                     (juce::Component*)&lfo2RateKnob, (juce::Component*)&lfo2AmtKnob })
+        c->setEnabled(!sf2Mode);
 
     auto gf = [this](const char* id) -> float
     {
@@ -929,9 +959,19 @@ void DSKSFzEditor::timerCallback()
     adsrDisplay.release = gf("ampRelease");
     adsrDisplay.repaint();
 
-    auto& syn = proc.getSynth();
-    float pl = syn.meterLevelL.exchange(0.0f);
-    float pr = syn.meterLevelR.exchange(0.0f);
+    float pl, pr;
+    if (proc.getCurrentFormat() == InstrumentFormat::SF2)
+    {
+        auto& syn = proc.getSF2Synth();
+        pl = syn.meterLevelL.exchange(0.0f);
+        pr = syn.meterLevelR.exchange(0.0f);
+    }
+    else
+    {
+        auto& syn = proc.getSynth();
+        pl = syn.meterLevelL.exchange(0.0f);
+        pr = syn.meterLevelR.exchange(0.0f);
+    }
     meterL.store(juce::jmax(meterL.load() * 0.88f, pl));
     meterR.store(juce::jmax(meterR.load() * 0.88f, pr));
 
@@ -961,11 +1001,14 @@ void DSKSFzEditor::libraryFileRequested(const juce::File& sfzFile)
     juce::Thread::launch([this, sfzFile, currentGen]()
         {
             if (currentGen != loadGeneration.load()) return; // Abortar carga si hay un clic más reciente
-    proc.loadSFZ(sfzFile);
+    proc.loadInstrument(sfzFile);
     juce::MessageManager::callAsync([this, currentGen]()
         {
             if (currentGen == loadGeneration.load())
-            statusLabel.setText("Ready", juce::dontSendNotification);
+            {
+                statusLabel.setText("Ready", juce::dontSendNotification);
+                onInstrumentLoaded();
+            }
         });
         });
 }
@@ -981,7 +1024,7 @@ bool DSKSFzEditor::isInterestedInFileDrag(const juce::StringArray& files)
     for (auto& f : files)
     {
         juce::File file(f);
-        if (file.hasFileExtension(".sfz") || file.hasFileExtension(".zip") || file.isDirectory())
+        if (file.hasFileExtension("sfz;sf2") || file.hasFileExtension(".zip") || file.isDirectory())
             return true;
     }
     return false;
@@ -1014,7 +1057,7 @@ void DSKSFzEditor::filesDropped(const juce::StringArray& files, int, int)
         {
             libraryPanel.addFolderDirect(file);
         }
-        else if (!sfzLoaded && file.hasFileExtension(".sfz"))
+        else if (!sfzLoaded && file.hasFileExtension("sfz;sf2"))
         {
             libraryFileRequested(file);
             sfzLoaded = true;
@@ -1134,21 +1177,60 @@ void DSKSFzEditor::triggerPreviewNote()
     previewCountdown = 10; // ~830 ms at 12 Hz
 }
 
-void DSKSFzEditor::loadSFZForPreview(const juce::File& f)
+void DSKSFzEditor::loadInstrumentForPreview(const juce::File& f)
 {
     statusLabel.setText("Loading...", juce::dontSendNotification);
     const int currentGen = ++loadGeneration;
     juce::Thread::launch([this, f, currentGen]()
         {
             if (currentGen != loadGeneration.load()) return; // Abortar carga si hay un clic más reciente
-    proc.loadSFZ(f);
+    proc.loadInstrument(f);
     juce::MessageManager::callAsync([this, currentGen]()
         {
             if (currentGen == loadGeneration.load())
             {
                 statusLabel.setText("Ready", juce::dontSendNotification);
                 triggerPreviewNote();
+                onInstrumentLoaded();
             }
         });
+        });
+}
+
+void DSKSFzEditor::onInstrumentLoaded()
+{
+    if (proc.isSF2Loaded() && proc.getSF2Presets().size() > 1)
+        showPresetPicker();
+}
+
+void DSKSFzEditor::showPresetPicker()
+{
+    if (!proc.isSF2Loaded()) return;
+    auto& presets = proc.getSF2Presets();
+    if (presets.empty()) return;
+
+    juce::PopupMenu menu;
+    std::map<int, juce::PopupMenu> bankMenus;
+    std::set<int> banks;
+    for (auto& p : presets) banks.insert(p.bank);
+
+    if (banks.size() > 1)
+    {
+        for (auto& p : presets)
+            bankMenus[p.bank].addItem(p.index + 1, p.name, true, p.index == proc.getSF2CurrentPresetIndex());
+        for (auto& b : banks)
+            menu.addSubMenu("Bank " + juce::String(b), bankMenus[b]);
+    }
+    else
+    {
+        for (auto& p : presets)
+            menu.addItem(p.index + 1, p.name, true, p.index == proc.getSF2CurrentPresetIndex());
+    }
+
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&instrNameLabel),
+        [this](int result)
+        {
+            if (result > 0)
+                proc.selectSF2Preset(result - 1);
         });
 }

@@ -105,13 +105,14 @@ DSKSFzProcessor::~DSKSFzProcessor() {}
 void DSKSFzProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     synth.prepare(sampleRate, samplesPerBlock);
+    sf2synth.prepare(sampleRate, samplesPerBlock);
     fx.prepare(sampleRate, samplesPerBlock);
     keyboardState.reset();
 }
 
 void DSKSFzProcessor::releaseResources()
 {
-    synth.allNotesOff();
+    allNotesOff();
 }
 
 void DSKSFzProcessor::processBlock(juce::AudioBuffer<float>& buffer,
@@ -132,8 +133,33 @@ void DSKSFzProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     syncParametersToEngine();
 
-    synth.processBlock(buffer, midiMessages);
+    if (currentFormat == InstrumentFormat::SF2)
+        sf2synth.processBlock(buffer, midiMessages);
+    else
+        synth.processBlock(buffer, midiMessages);
     fx.process(buffer);
+}
+
+void DSKSFzProcessor::allNotesOff()
+{
+    synth.allNotesOff();
+    sf2synth.allNotesOff();
+}
+
+void DSKSFzProcessor::resetRoundRobin()
+{
+    synth.resetRoundRobin();
+    sf2synth.resetRoundRobin();
+}
+
+bool DSKSFzProcessor::selectSF2Preset(int presetIndex)
+{
+    isLoadingInstrument.store(true, std::memory_order_release);
+    juce::Thread::sleep(30);
+    sf2synth.allNotesOff();
+    bool ok = sf2synth.selectPreset(presetIndex);
+    isLoadingInstrument.store(false, std::memory_order_release);
+    return ok;
 }
 
 void DSKSFzProcessor::syncParametersToEngine()
@@ -172,6 +198,14 @@ void DSKSFzProcessor::syncParametersToEngine()
     synth.globalTune      = getF("fineTune");
     synth.maxVoices       = getI("maxVoices");
 
+    // Master vol/pan, transpose/tune y polifonía se comparten con el motor SF2
+    // (el resto de parámetros de synth no aplican a SF2, ver SF2Synth.h)
+    sf2synth.masterVolume    = synth.masterVolume;
+    sf2synth.masterPan       = synth.masterPan;
+    sf2synth.globalTranspose = synth.globalTranspose;
+    sf2synth.globalTune      = synth.globalTune;
+    sf2synth.maxVoices       = synth.maxVoices;
+
     synth.lfo1.rate   = getF("lfo1Rate");
     synth.lfo1.amount = getF("lfo1Amount");
     synth.lfo1.shape  = static_cast<LFO::Shape>(getI("lfo1Shape"));
@@ -207,7 +241,7 @@ void DSKSFzProcessor::syncParametersToEngine()
     fx.eqHighGain = getF("eqHigh");
 }
 
-bool DSKSFzProcessor::loadSFZ(const juce::File& file)
+bool DSKSFzProcessor::loadInstrument(const juce::File& file)
 {
     std::lock_guard<std::mutex> lock(loadMutex);
 
@@ -217,8 +251,19 @@ bool DSKSFzProcessor::loadSFZ(const juce::File& file)
     // Wait long enough for the audio thread to complete its current block
     juce::Thread::sleep(30);
 
-    synth.allNotesOff();
-    bool ok = synth.loadSFZ(file);
+    allNotesOff();
+
+    bool ok = false;
+    if (file.hasFileExtension(".sf2"))
+    {
+        ok = sf2synth.loadSF2(file);
+        if (ok) currentFormat = InstrumentFormat::SF2;
+    }
+    else
+    {
+        ok = synth.loadSFZ(file);
+        if (ok) currentFormat = InstrumentFormat::SFZ;
+    }
     if (ok) currentSFZFile = file;
 
     isLoadingInstrument.store(false, std::memory_order_release);
@@ -229,6 +274,8 @@ void DSKSFzProcessor::getStateInformation(juce::MemoryBlock& dest)
 {
     auto state = params.copyState();
     state.setProperty("sfzPath", currentSFZFile.getFullPathName(), nullptr);
+    if (currentFormat == InstrumentFormat::SF2)
+        state.setProperty("sf2PresetIndex", sf2synth.getCurrentPresetIndex(), nullptr);
 
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
     copyXmlToBinary(*xml, dest);
@@ -246,8 +293,12 @@ void DSKSFzProcessor::setStateInformation(const void* data, int size)
     if (sfzPath.isNotEmpty())
     {
         juce::File sfzFile(sfzPath);
-        if (sfzFile.existsAsFile())
-            loadSFZ(sfzFile);
+        if (sfzFile.existsAsFile() && loadInstrument(sfzFile))
+        {
+            int presetIndex = state.getProperty("sf2PresetIndex", -1);
+            if (currentFormat == InstrumentFormat::SF2 && presetIndex >= 0)
+                selectSF2Preset(presetIndex);
+        }
     }
 }
 

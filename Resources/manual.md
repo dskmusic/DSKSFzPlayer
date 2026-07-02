@@ -8,11 +8,14 @@ Version 1.0 · DSK Music · www.dskmusic.com
 
 ## Overview
 
-DSK SFz Player is a 64-voice polyphonic SFZ sampler available as a VST3 plugin and as a
-standalone application. Load any SFZ instrument library and play it with full MIDI control,
-an amplitude and filter envelope, two LFOs, five effects, and real-time parameter automation.
+DSK SFz Player is a 64-voice polyphonic SFZ/SF2 sampler available as a VST3 plugin and as a
+standalone application. Load any SFZ or SF2 (SoundFont2) instrument and play it with full MIDI
+control, five effects, and real-time parameter automation.
 
-Supported audio formats inside SFZ libraries: WAV, FLAC, OGG.
+Supported audio formats inside SFZ libraries: WAV, FLAC, OGG. SF2 (SoundFont2) files are also
+supported directly. Note: the Amp ADSR / Filter / Mod (LFO) sections only apply to SFZ — SF2
+instruments use the envelope, filter, and modulation already baked into the soundfont, so those
+sections are disabled while an SF2 is loaded.
 
 ---
 
@@ -20,31 +23,35 @@ Supported audio formats inside SFZ libraries: WAV, FLAC, OGG.
 
 ### A  Drag & Drop (onto the plugin window)
 
-| What you drop       | Result                                                          |
-|---------------------|-----------------------------------------------------------------|
-| .sfz file           | Instrument loads immediately                                    |
-| Folder with SFZ     | Folder is added to the Library panel                           |
-| .zip pack           | You choose a destination, it extracts, then shows in Library   |
+| What you drop         | Result                                                          |
+|-----------------------|-----------------------------------------------------------------|
+| .sfz or .sf2 file     | Instrument loads immediately                                    |
+| Folder with SFZ/SF2   | Folder is added to the Library panel                           |
+| .zip pack             | You choose a destination, it extracts, then shows in Library   |
 
-Only one SFZ and one ZIP are loaded per drop; all dragged folders are added.
+Only one SFZ/SF2 and one ZIP are loaded per drop; all dragged folders are added.
 
 ### B  Open Button
 
-Click **Open SFZ / ZIP** (top-right of the main panel) to browse for .sfz or .zip files.
+Click **Open SFZ/SF2/ZIP** (top-right of the main panel) to browse for .sfz, .sf2, or .zip files.
 
 ### C  Library Tree
 
-Double-click any .sfz entry in the Library tree on the left.
+Double-click any .sfz or .sf2 entry in the Library tree on the left.
+
+If the SF2 file contains more than one bank/preset, a picker menu appears automatically after
+loading — the same picker can be reopened at any time by clicking the instrument name shown in
+the header (a small **▾** appears next to the name when a picker is available).
 
 ---
 
 ## Library Panel  (left column)
 
-The Library organises your SFZ collections in a folder tree.
+The Library organises your SFZ/SF2 collections in a folder tree.
 
 ### Adding a folder
 Click **+** at the top of the panel and select a directory.
-All .sfz and .zip files found inside (including subfolders) appear in the tree.
+All .sfz, .sf2, and .zip files found inside (including subfolders) appear in the tree.
 
 ### Removing a folder
 Select a root folder in the tree and click **−**.
@@ -56,7 +63,7 @@ Click **+/−** to toggle all library root folders open or closed.
 Type in the search box to filter instruments by name or path across all library folders.
 Press **X** to clear the search and return to the tree view.
 
-### Right-click on an SFZ file
+### Right-click on an SFZ or SF2 file
 Opens a context menu with **Add to Favorites** (see Favorites section below).
 
 ---
@@ -219,12 +226,15 @@ The existing library and favorites are completely replaced by the imported data.
 
 ## Descripción general
 
-DSK SFz Player es un sampler SFZ polifónico de 64 voces disponible como plugin VST3 y como
-aplicación independiente (Standalone). Carga cualquier librería de instrumentos en formato SFZ
-y tócala con control MIDI completo, envolventes de amplitud y filtro, dos LFOs, cinco efectos
-y automatización de parámetros en tiempo real.
+DSK SFz Player es un sampler SFZ/SF2 polifónico de 64 voces disponible como plugin VST3 y como
+aplicación independiente (Standalone). Carga cualquier instrumento en formato SFZ o SF2
+(SoundFont2) y tócalo con control MIDI completo, cinco efectos y automatización de parámetros
+en tiempo real.
 
-Formatos de audio compatibles dentro de las librerías SFZ: WAV, FLAC, OGG.
+Formatos de audio compatibles dentro de las librerías SFZ: WAV, FLAC, OGG. Los archivos SF2
+(SoundFont2) también son compatibles directamente. Nota: las secciones Amp ADSR / Filter / Mod
+(LFO) solo aplican a SFZ — los instrumentos SF2 usan la envolvente, filtro y modulación ya
+incluidos en el soundfont, así que esas secciones se deshabilitan mientras hay un SF2 cargado.
 
 ---
 
@@ -232,31 +242,36 @@ Formatos de audio compatibles dentro de las librerías SFZ: WAV, FLAC, OGG.
 
 ### A  Arrastrar y soltar (sobre la ventana del plugin)
 
-| Qué arrastras          | Resultado                                                              |
-|------------------------|------------------------------------------------------------------------|
-| Archivo .sfz           | El instrumento se carga inmediatamente                                 |
-| Carpeta con SFZ        | La carpeta se añade al panel de Librería                              |
-| Pack .zip              | Eliges dónde extraer, se descomprime y aparece en la Librería         |
+| Qué arrastras            | Resultado                                                              |
+|---------------------------|------------------------------------------------------------------------|
+| Archivo .sfz o .sf2       | El instrumento se carga inmediatamente                                 |
+| Carpeta con SFZ/SF2       | La carpeta se añade al panel de Librería                              |
+| Pack .zip                 | Eliges dónde extraer, se descomprime y aparece en la Librería         |
 
-Solo se carga un SFZ y un ZIP por soltar; todas las carpetas arrastradas se añaden.
+Solo se carga un SFZ/SF2 y un ZIP por soltar; todas las carpetas arrastradas se añaden.
 
 ### B  Botón Open
 
-Haz clic en **Open SFZ / ZIP** (arriba a la derecha) para buscar archivos .sfz o .zip.
+Haz clic en **Open SFZ/SF2/ZIP** (arriba a la derecha) para buscar archivos .sfz, .sf2 o .zip.
 
 ### C  Árbol de Librería
 
-Haz doble clic en cualquier entrada .sfz del árbol de la Librería (columna izquierda).
+Haz doble clic en cualquier entrada .sfz o .sf2 del árbol de la Librería (columna izquierda).
+
+Si el archivo SF2 contiene más de un banco/preset, aparece automáticamente un menú selector
+tras la carga — el mismo selector puede volver a abrirse en cualquier momento haciendo clic en
+el nombre del instrumento mostrado en el encabezado (aparece un pequeño **▾** junto al nombre
+cuando el selector está disponible).
 
 ---
 
 ## Panel de Librería  (columna izquierda)
 
-La Librería organiza tus colecciones SFZ en un árbol de carpetas.
+La Librería organiza tus colecciones SFZ/SF2 en un árbol de carpetas.
 
 ### Añadir una carpeta
 Haz clic en **+** en la parte superior del panel y selecciona un directorio.
-Todos los archivos .sfz y .zip que contenga (incluyendo subcarpetas) aparecerán en el árbol.
+Todos los archivos .sfz, .sf2 y .zip que contenga (incluyendo subcarpetas) aparecerán en el árbol.
 
 ### Eliminar una carpeta
 Selecciona una carpeta raíz en el árbol y haz clic en **−**.
@@ -268,7 +283,7 @@ Haz clic en **+/−** para abrir o cerrar todas las carpetas raíz de la librer�
 Escribe en el cuadro de búsqueda para filtrar instrumentos por nombre o ruta.
 Pulsa **X** para limpiar la búsqueda y volver a la vista de árbol.
 
-### Clic derecho en un archivo SFZ
+### Clic derecho en un archivo SFZ o SF2
 Abre un menú contextual con **Add to Favorites** (ver sección de Favoritos).
 
 ---
