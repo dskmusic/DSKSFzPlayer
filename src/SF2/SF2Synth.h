@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include <vector>
+#include "../SFZ/SFZSynth.h" // reutiliza SFZADSR / BiquadFilter / LFO / SFZFilterType (DSP sin dependencias de SFZ)
 
 struct tsf;
 
@@ -51,6 +52,30 @@ public:
     float globalTune     = 0.0f;   // centésimas
     int   maxVoices       = 32;
 
+    // ADSR de amplitud global — sobrescribe la envolvente propia del preset SF2
+    // (mismo criterio que SFZSynth: el knob del plugin manda, no el del archivo)
+    float ampAttack  = 0.0f;
+    float ampDecay   = 0.0f;
+    float ampSustain = 100.0f;
+    float ampRelease = 0.0f;
+
+    // Filtro global — reemplaza también el filtro interno (paso-bajo) del SF2;
+    // se aplica en bus (sobre la mezcla final), no por voz, ya que TinySoundFont
+    // no expone las voces individualmente fuera de su render mezclado.
+    float filterCutoff    = 20000.0f;
+    float filterResonance = 0.707f;
+    int   filterTypeIdx   = 0;        // 0=LP 1=HP 2=BP 3=Notch
+    float filterEnvAmt    = 0.0f;
+
+    // ADSR de filtro global (también en bus, re-disparada en cada note-on)
+    float fltAttack  = 0.001f;
+    float fltDecay   = 0.1f;
+    float fltSustain = 100.0f;
+    float fltRelease = 0.1f;
+
+    // LFOs (mismo comportamiento global que en SFZSynth)
+    LFO lfo1, lfo2;
+
     mutable std::atomic<float> meterLevelL { 0.0f };
     mutable std::atomic<float> meterLevelR { 0.0f };
 
@@ -65,7 +90,12 @@ private:
     double sampleRate = 44100.0;
     std::vector<float> renderScratch; // buffer TSF_STEREO_UNWEAVED: [L...][R...]
 
+    // Filtro global de bus (L/R) y su envolvente; LFOs ya declarados arriba (públicos)
+    SFZADSR filterEnv;
+    BiquadFilter filterL, filterR;
+
     void applyGlobals();
+    void applyPresetOverrides(); // fuerza ADSR de amplitud global y desactiva el filtro propio del preset
     void renderSegment(juce::AudioBuffer<float>& output, int startSample, int numSamples);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SF2Synth)

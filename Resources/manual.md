@@ -13,9 +13,10 @@ standalone application. Load any SFZ or SF2 (SoundFont2) instrument and play it 
 control, five effects, and real-time parameter automation.
 
 Supported audio formats inside SFZ libraries: WAV, FLAC, OGG. SF2 (SoundFont2) files are also
-supported directly. Note: the Amp ADSR / Filter / Mod (LFO) sections only apply to SFZ — SF2
-instruments use the envelope, filter, and modulation already baked into the soundfont, so those
-sections are disabled while an SF2 is loaded.
+supported directly. Note: for SF2 instruments, the Amp ADSR and Filter/Mod (LFO) sections replace
+the soundfont's own built-in envelope and filter with the plugin's knobs (same behaviour as SFZ).
+The Amp ADSR is applied per note; Filter and Mod are applied to the mixed output rather than per
+voice, since the SF2 engine renders all voices already mixed together.
 
 ---
 
@@ -232,9 +233,11 @@ aplicación independiente (Standalone). Carga cualquier instrumento en formato S
 en tiempo real.
 
 Formatos de audio compatibles dentro de las librerías SFZ: WAV, FLAC, OGG. Los archivos SF2
-(SoundFont2) también son compatibles directamente. Nota: las secciones Amp ADSR / Filter / Mod
-(LFO) solo aplican a SFZ — los instrumentos SF2 usan la envolvente, filtro y modulación ya
-incluidos en el soundfont, así que esas secciones se deshabilitan mientras hay un SF2 cargado.
+(SoundFont2) también son compatibles directamente. Nota: en instrumentos SF2, las secciones Amp
+ADSR y Filter/Mod (LFO) sustituyen la envolvente y el filtro propios del soundfont por los knobs
+del plugin (mismo comportamiento que en SFZ). El ADSR de amplitud se aplica por nota; el Filtro y
+el Mod se aplican sobre la mezcla final en vez de por voz, ya que el motor SF2 renderiza todas las
+voces ya mezcladas.
 
 ---
 

@@ -932,21 +932,6 @@ void DSKSFzEditor::timerCallback()
         proc.isLoadingInstrument.load() ? "Loading..." : "Ready",
         juce::dontSendNotification);
 
-    // Amp ADSR / Filter / Mod no aplican a SF2 (TinySoundFont ya aplica la
-    // envolvente/filtro/modulación propia de cada preset)
-    for (auto* c : { (juce::Component*)&ampAKnob, (juce::Component*)&ampDKnob,
-                     (juce::Component*)&ampSKnob, (juce::Component*)&ampRKnob,
-                     (juce::Component*)&adsrDisplay,
-                     (juce::Component*)&filtTypeBox, (juce::Component*)&filtCutKnob,
-                     (juce::Component*)&filtResKnob, (juce::Component*)&filtEnvKnob,
-                     (juce::Component*)&filtAKnob, (juce::Component*)&filtDKnob,
-                     (juce::Component*)&filtSKnob, (juce::Component*)&filtRKnob,
-                     (juce::Component*)&lfo1ShapeBox, (juce::Component*)&lfo1TgtBox,
-                     (juce::Component*)&lfo2ShapeBox, (juce::Component*)&lfo2TgtBox,
-                     (juce::Component*)&lfo1RateKnob, (juce::Component*)&lfo1AmtKnob,
-                     (juce::Component*)&lfo2RateKnob, (juce::Component*)&lfo2AmtKnob })
-        c->setEnabled(!sf2Mode);
-
     auto gf = [this](const char* id) -> float
     {
         auto* p = proc.params.getRawParameterValue(id);

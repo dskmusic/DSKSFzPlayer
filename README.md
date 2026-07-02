@@ -21,7 +21,7 @@
 * **Drag & Drop Workflow:** Effortlessly load `.sfz`, `.sf2` files, folders, or `.zip` packs directly into the plugin.
 * **SF2 Bank/Preset Picker:** Multi-bank SoundFont files automatically show a searchable bank/preset selector — reachable at any time by clicking the instrument name in the header.
 * **Sound Sculpting:**
-    * Amplitude & Filter envelopes, two versatile LFOs (SFZ instruments — SF2 presets use their own built-in envelope/filter/modulation).
+    * Amplitude & Filter envelopes, two versatile LFOs — available for both SFZ and SF2, replacing each preset's own envelope/filter with the plugin's knobs.
     * Five built-in effects, available for both SFZ and SF2.
 * **Automation:** Real-time parameter automation for dynamic performances.
 * **Intuitive Library Management:** Effortlessly organize, browse, and manage your growing collection of instrument libraries.

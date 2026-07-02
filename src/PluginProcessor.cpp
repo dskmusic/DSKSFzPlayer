@@ -198,13 +198,26 @@ void DSKSFzProcessor::syncParametersToEngine()
     synth.globalTune      = getF("fineTune");
     synth.maxVoices       = getI("maxVoices");
 
-    // Master vol/pan, transpose/tune y polifonía se comparten con el motor SF2
-    // (el resto de parámetros de synth no aplican a SF2, ver SF2Synth.h)
+    // El motor SF2 comparte los mismos parámetros globales que SFZSynth (ver
+    // SF2Synth.h): vol/pan/transpose/tune/polifonía, ADSR de amplitud, filtro
+    // (aplicado en bus) y LFOs — se mantienen sincronizados con los mismos knobs.
     sf2synth.masterVolume    = synth.masterVolume;
     sf2synth.masterPan       = synth.masterPan;
     sf2synth.globalTranspose = synth.globalTranspose;
     sf2synth.globalTune      = synth.globalTune;
     sf2synth.maxVoices       = synth.maxVoices;
+    sf2synth.ampAttack       = synth.ampAttack;
+    sf2synth.ampDecay        = synth.ampDecay;
+    sf2synth.ampSustain      = synth.ampSustain;
+    sf2synth.ampRelease      = synth.ampRelease;
+    sf2synth.filterCutoff    = synth.filterCutoff;
+    sf2synth.filterResonance = synth.filterResonance;
+    sf2synth.filterTypeIdx   = synth.filterTypeIdx;
+    sf2synth.filterEnvAmt    = synth.filterEnvAmt;
+    sf2synth.fltAttack       = synth.fltAttack;
+    sf2synth.fltDecay        = synth.fltDecay;
+    sf2synth.fltSustain      = synth.fltSustain;
+    sf2synth.fltRelease      = synth.fltRelease;
 
     synth.lfo1.rate   = getF("lfo1Rate");
     synth.lfo1.amount = getF("lfo1Amount");
@@ -214,6 +227,18 @@ void DSKSFzProcessor::syncParametersToEngine()
     synth.lfo2.amount = getF("lfo2Amount");
     synth.lfo2.shape  = static_cast<LFO::Shape>(getI("lfo2Shape"));
     synth.lfo2.target = static_cast<LFO::Target>(getI("lfo2Target"));
+
+    // Solo se copian los ajustes (no la fase en curso: cada motor corre su
+    // propio LFO de forma independiente, ya que solo uno de los dos procesa
+    // audio a la vez según currentFormat).
+    sf2synth.lfo1.rate   = synth.lfo1.rate;
+    sf2synth.lfo1.amount = synth.lfo1.amount;
+    sf2synth.lfo1.shape  = synth.lfo1.shape;
+    sf2synth.lfo1.target = synth.lfo1.target;
+    sf2synth.lfo2.rate   = synth.lfo2.rate;
+    sf2synth.lfo2.amount = synth.lfo2.amount;
+    sf2synth.lfo2.shape  = synth.lfo2.shape;
+    sf2synth.lfo2.target = synth.lfo2.target;
 
     // Enable buttons: ON = effect active (bypass = NOT enabled)
     fx.driveBypass  = !getB("driveOn");
